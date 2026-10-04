@@ -37,6 +37,7 @@ def create_table():
 @app.route("/")
 def index():
     conn = get_db()
+    create_table()
 
     products = conn.execute(
         "SELECT * FROM products ORDER BY id"
