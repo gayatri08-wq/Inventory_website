@@ -295,6 +295,7 @@ def bill(product_id):
 
 
 # Start application
+
 if __name__ == "__main__":
 
     create_table()
