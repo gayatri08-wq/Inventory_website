@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory Management System</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <h1>📦 Inventory Management System</h1>
+
+    <h2>➕ Add Product</h2>
+
+    <form action="/add" method="POST">
+
+        <input type="text" name="id" placeholder="Product ID" required>
+
+        <input type="text" name="name" placeholder="Product Name" required>
+
+        <input type="text" name="category" placeholder="Category">
+
+        <input type="number" name="quantity" placeholder="Quantity" required>
+
+        <input type="number" step="0.01" name="price" placeholder="Price" required>
+
+        <input type="text" name="supplier" placeholder="Supplier">
+
+        <button type="submit">Add Product</button>
+
+    </form>
+
+    <h2>📋 Products</h2>
+
+<form action="/search" method="GET">
+
+    <input type="text"
+           name="keyword"
+           placeholder="Search Product">
+
+    <button type="submit">🔍 Search</button>
+
+</form>
+
+<a href="/">Show All Products</a>
+    <br><br>
+
+    <a href="/low-stock">
+    ⚠️ Low Stock Products
+    </a> 
+    
+    <table>
+
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Supplier</th>
+            <th>Action</th>
+        </tr>
+
+        {% for product in products %}
+
+        <tr>
+
+            <td>{{ product['id'] }}</td>
+
+            <td>{{ product['name'] }}</td>
+
+            <td>{{ product['category'] }}</td>
+
+            <td>{{ product['quantity'] }}</td>
+
+            <td>₹{{ product['price'] }}</td>
+
+            <td>{{ product['supplier'] }}</td>
+
+            <td>
+
+                <a href="/delete/{{ product['id'] }}"
+                   onclick="return confirm('Delete this product?')">
+                    Delete
+                </a>
+                |
+                <a href="/edit/{{ product['id'] }}">
+                  Edit
+                </a>
+                |
+                <a href="/stock-out/{{ product['id'] }}">
+                   Stock Out
+                </a>
+                |
+
+                <a href="/bill/{{ product['id'] }}">
+                    Bill
+                </a>
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+</body>
+</html>
