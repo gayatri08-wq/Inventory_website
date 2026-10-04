@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Product</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <h1>🔍 Search Product</h1>
+
+    <form action="/search" method="GET">
+
+        <input type="text"
+               name="keyword"
+               placeholder="Search by ID, Name or Category"
+               required>
+
+        <button type="submit">Search</button>
+
+    </form>
+
+    <h2>Search Results</h2>
+
+    <table>
+
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Supplier</th>
+        </tr>
+
+        {% for product in products %}
+
+        <tr>
+            <td>{{ product['id'] }}</td>
+            <td>{{ product['name'] }}</td>
+            <td>{{ product['category'] }}</td>
+            <td>{{ product['quantity'] }}</td>
+            <td>₹{{ product['price'] }}</td>
+            <td>{{ product['supplier'] }}</td>
+        </tr>
+
+        {% else %}
+
+        <tr>
+            <td colspan="6">No products found</td>
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+    <br>
+
+    <a href="/">⬅ Back to Products</a>
+
+</body>
+</html>
