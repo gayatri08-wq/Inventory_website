@@ -14,7 +14,7 @@ def get_db():
     return conn
 
 
-# Create table
+# Create table and add new columns safely
 def create_table():
     conn = get_db()
 
@@ -25,9 +25,28 @@ def create_table():
             category TEXT,
             quantity INTEGER NOT NULL,
             price REAL NOT NULL,
-            supplier TEXT
+            supplier TEXT,
+            supplier_location TEXT,
+            delivery_location TEXT
         )
     """)
+
+    # Check existing columns
+    columns = [
+        row["name"]
+        for row in conn.execute("PRAGMA table_info(products)").fetchall()
+    ]
+
+    # Add new columns if they do not already exist
+    if "supplier_location" not in columns:
+        conn.execute(
+            "ALTER TABLE products ADD COLUMN supplier_location TEXT"
+        )
+
+    if "delivery_location" not in columns:
+        conn.execute(
+            "ALTER TABLE products ADD COLUMN delivery_location TEXT"
+        )
 
     conn.commit()
     conn.close()
@@ -36,8 +55,10 @@ def create_table():
 # Home page
 @app.route("/")
 def index():
-    conn = get_db()
+
     create_table()
+
+    conn = get_db()
 
     products = conn.execute(
         "SELECT * FROM products ORDER BY id"
@@ -45,14 +66,17 @@ def index():
 
     conn.close()
 
-    return render_template("index.html", products=products)
+    return render_template(
+        "index.html",
+        products=products
+    )
 
 
 # Add product
 @app.route("/add", methods=["POST"])
 def add_product():
 
-    product_id = request.form["id"]
+    product_id = request.form["product_id"]
     name = request.form["name"]
     category = request.form["category"]
     quantity = request.form["quantity"]
@@ -67,23 +91,37 @@ def add_product():
     conn = get_db()
 
     try:
+
         conn.execute("""
             INSERT INTO products
-            (id, name, category, quantity, price, supplier)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (
+                id,
+                name,
+                category,
+                quantity,
+                price,
+                supplier,
+                supplier_location,
+                delivery_location
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             product_id,
             name,
             category,
             quantity,
             price,
-            supplier
+            supplier,
+            supplier_location,
+            delivery_location
         ))
 
         conn.commit()
 
     except sqlite3.IntegrityError:
+
         conn.close()
+
         return "Product ID already exists"
 
     conn.close()
@@ -132,10 +170,6 @@ def edit_product(product_id):
 
 # Update product
 @app.route("/update", methods=["POST"])
-
-
-# Update product
-@app.route("/update", methods=["POST"])
 def update_product():
 
     product_id = request.form["id"]
@@ -144,16 +178,21 @@ def update_product():
     quantity = request.form["quantity"]
     price = request.form["price"]
     supplier = request.form["supplier"]
+    supplier_location = request.form["supplier_location"]
+    delivery_location = request.form["delivery_location"]
 
     conn = get_db()
 
     conn.execute("""
         UPDATE products
-        SET name = ?,
+        SET
+            name = ?,
             category = ?,
             quantity = ?,
             price = ?,
-            supplier = ?
+            supplier = ?,
+            supplier_location = ?,
+            delivery_location = ?
         WHERE id = ?
     """, (
         name,
@@ -161,6 +200,8 @@ def update_product():
         quantity,
         price,
         supplier,
+        supplier_location,
+        delivery_location,
         product_id
     ))
 
@@ -168,6 +209,7 @@ def update_product():
     conn.close()
 
     return redirect("/")
+
 
 # Stock Out page
 @app.route("/stock-out/<product_id>")
@@ -206,11 +248,15 @@ def stock_out():
     ).fetchone()
 
     if product is None:
+
         conn.close()
+
         return "Product not found"
 
     if quantity > product["quantity"]:
+
         conn.close()
+
         return "Not enough stock"
 
     new_quantity = product["quantity"] - quantity
@@ -239,8 +285,14 @@ def search():
         WHERE id LIKE ?
         OR name LIKE ?
         OR category LIKE ?
+        OR supplier LIKE ?
+        OR supplier_location LIKE ?
+        OR delivery_location LIKE ?
         ORDER BY id
     """, (
+        "%" + keyword + "%",
+        "%" + keyword + "%",
+        "%" + keyword + "%",
         "%" + keyword + "%",
         "%" + keyword + "%",
         "%" + keyword + "%"
@@ -298,7 +350,6 @@ def bill(product_id):
 
 
 # Start application
-
 if __name__ == "__main__":
 
     create_table()
@@ -307,4 +358,4 @@ if __name__ == "__main__":
         debug=True,
         host="0.0.0.0",
         port=5000
-    ) 
+    )
