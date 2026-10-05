@@ -5,8 +5,7 @@
 
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -65,6 +64,15 @@
             color: white;
             text-decoration: none;
             border-radius: 6px;
+        }
+
+        .error {
+            background: #ffebee;
+            border-left: 5px solid #c62828;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            color: #b71c1c;
         }
     </style>
 </head>
@@ -139,94 +147,168 @@
 
 <script>
 
-    const supplierLocation =
-        "{{ product['supplier_location'] }}";
-
-    const deliveryLocation =
-        "{{ product['delivery_location'] }}";
+const supplierLocation = {{ product['supplier_location']|tojson }};
+const deliveryLocation = {{ product['delivery_location']|tojson }};
 
 
-    async function getCoordinates(location) {
+/* -----------------------------------------
+   LOCATION SEARCH
+   India is given priority
+----------------------------------------- */
 
-        const url =
-            "https://nominatim.openstreetmap.org/search?format=json&limit=1&q="
-            + encodeURIComponent(location);
+async function getCoordinates(location) {
+
+    const searchLocation = location + ", India";
+
+    const url =
+        "https://nominatim.openstreetmap.org/search"
+        + "?format=json"
+        + "&limit=5"
+        + "&countrycodes=in"
+        + "&q="
+        + encodeURIComponent(searchLocation);
+
+    try {
 
         const response = await fetch(url);
 
         const data = await response.json();
 
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
+
             return null;
+
+        }
+
+        /*
+           First result from India
+        */
+
+        for (let place of data) {
+
+            if (
+                place.display_name &&
+                place.display_name.toLowerCase().includes("india")
+            ) {
+
+                return [
+                    parseFloat(place.lat),
+                    parseFloat(place.lon)
+                ];
+
+            }
+
         }
 
         return [
             parseFloat(data[0].lat),
             parseFloat(data[0].lon)
         ];
+
+    } catch (error) {
+
+        console.log("Location error:", error);
+
+        return null;
+    }
+}
+
+
+/* -----------------------------------------
+   SHOW MAP
+----------------------------------------- */
+
+async function showMap() {
+
+    const mapElement =
+        document.getElementById("map");
+
+
+    const supplier =
+        await getCoordinates(supplierLocation);
+
+
+    const delivery =
+        await getCoordinates(deliveryLocation);
+
+
+    /* Location not found */
+
+    if (!supplier || !delivery) {
+
+        mapElement.innerHTML = `
+            <div class="error">
+                ⚠️ Location not found.<br><br>
+                Please enter valid Indian locations.
+            </div>
+        `;
+
+        return;
     }
 
 
-    async function showMap() {
+    /* -----------------------------------------
+       CREATE MAP
+    ----------------------------------------- */
 
-        const supplier =
-            await getCoordinates(supplierLocation);
-
-        const delivery =
-            await getCoordinates(deliveryLocation);
+    const map =
+        L.map("map").setView(supplier, 6);
 
 
-        if (!supplier || !delivery) {
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            maxZoom: 19,
 
-            document.getElementById("map").innerHTML =
-                "<p style='padding:20px;'>Location not found.</p>";
-
-            return;
+            attribution:
+                "&copy; OpenStreetMap contributors"
         }
+    ).addTo(map);
 
 
-        const map =
-            L.map("map").setView(supplier, 6);
+    /* -----------------------------------------
+       SUPPLIER MARKER
+    ----------------------------------------- */
+
+    L.marker(supplier)
+        .addTo(map)
+        .bindPopup(
+            "<b>📦 Supplier</b><br>"
+            + supplierLocation
+        );
 
 
-        L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                maxZoom: 19,
-                attribution:
-                    "&copy; OpenStreetMap contributors"
-            }
-        ).addTo(map);
+    /* -----------------------------------------
+       DELIVERY MARKER
+    ----------------------------------------- */
+
+    L.marker(delivery)
+        .addTo(map)
+        .bindPopup(
+            "<b>🏠 Delivery Location</b><br>"
+            + deliveryLocation
+        );
 
 
-        L.marker(supplier)
-            .addTo(map)
-            .bindPopup(
-                "<b>📦 Supplier</b><br>"
-                + supplierLocation
-            )
-            .openPopup();
+    /* -----------------------------------------
+       ROUTE
+    ----------------------------------------- */
+
+    const routeUrl =
+        "https://router.project-osrm.org/route/v1/driving/"
+        + supplier[1] + ","
+        + supplier[0]
+        + ";"
+        + delivery[1] + ","
+        + delivery[0]
+        + "?overview=full&geometries=geojson";
 
 
-        L.marker(delivery)
-            .addTo(map)
-            .bindPopup(
-                "<b>🏠 Delivery Location</b><br>"
-                + deliveryLocation
-            );
-
-
-        const routeUrl =
-            "https://router.project-osrm.org/route/v1/driving/"
-            + supplier[1] + ","
-            + supplier[0] + ";"
-            + delivery[1] + ","
-            + delivery[0]
-            + "?overview=full&geometries=geojson";
-
+    try {
 
         const routeResponse =
             await fetch(routeUrl);
+
 
         const routeData =
             await routeResponse.json();
@@ -241,13 +323,19 @@
                 routeData.routes[0];
 
 
+            /* -----------------------------------------
+               ROUTE LINE
+            ----------------------------------------- */
+
             const coordinates =
                 route.geometry.coordinates.map(
                     function(point) {
+
                         return [
                             point[1],
                             point[0]
                         ];
+
                     }
                 );
 
@@ -260,18 +348,101 @@
             ).addTo(map);
 
 
+            /* -----------------------------------------
+               DISTANCE + TRAVEL TIME
+            ----------------------------------------- */
+
+            const distanceKm =
+                (route.distance / 1000).toFixed(1);
+
+
+            const totalMinutes =
+                Math.round(route.duration / 60);
+
+
+            const hours =
+                Math.floor(totalMinutes / 60);
+
+
+            const minutes =
+                totalMinutes % 60;
+
+
+            let travelTime = "";
+
+
+            if (hours > 0) {
+
+                travelTime =
+                    hours + " hr " + minutes + " min";
+
+            } else {
+
+                travelTime =
+                    minutes + " min";
+
+            }
+
+
+            /* -----------------------------------------
+               ADD ROUTE INFORMATION
+            ----------------------------------------- */
+
+            const info =
+                document.createElement("div");
+
+
+            info.style.background = "white";
+            info.style.padding = "15px";
+            info.style.marginTop = "15px";
+            info.style.borderRadius = "8px";
+            info.style.boxShadow =
+                "0 2px 8px rgba(0,0,0,0.1)";
+
+
+            info.innerHTML = `
+                <p>
+                    📏 <strong>Route Distance:</strong>
+                    ${distanceKm} km
+                </p>
+
+                <p>
+                    🚚 <strong>Estimated Travel Time:</strong>
+                    ${travelTime}
+                </p>
+            `;
+
+
+            document
+                .querySelector(".details")
+                .appendChild(info);
+
+
+            /* -----------------------------------------
+               FIT MAP TO ROUTE
+            ----------------------------------------- */
+
             map.fitBounds(
                 coordinates,
                 {
                     padding: [30, 30]
                 }
             );
+
         }
+
+    } catch (error) {
+
+        console.log("Route error:", error);
 
     }
 
+}
 
-    showMap();
+
+/* Start */
+
+showMap();
 
 </script>
 
