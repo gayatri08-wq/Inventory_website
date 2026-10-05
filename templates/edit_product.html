@@ -1,19 +1,29 @@
+```html
 <!DOCTYPE html>
 <html>
+
 <head>
+
     <title>Edit Product</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
+
 </head>
+
 
 <body>
 
     <h1>✏️ Edit Product</h1>
 
+
     <form action="/update" method="POST">
 
-        <input type="hidden" name="id" value="{{ product['id'] }}">
+
+        <input type="hidden"
+               name="id"
+               value="{{ product['id'] }}">
+
 
         <input type="text"
                name="name"
@@ -21,16 +31,19 @@
                placeholder="Product Name"
                required>
 
+
         <input type="text"
                name="category"
-               value="{{ product['category'] }}"
+               value="{{ product['category'] or '' }}"
                placeholder="Category">
+
 
         <input type="number"
                name="quantity"
                value="{{ product['quantity'] }}"
                placeholder="Quantity"
                required>
+
 
         <input type="number"
                step="0.01"
@@ -39,23 +52,66 @@
                placeholder="Price"
                required>
 
+
         <input type="text"
                name="supplier"
                value="{{ product['supplier'] or '' }}"
                placeholder="Supplier">
+
 
         <input type="text"
                name="supplier_location"
                value="{{ product['supplier_location'] or '' }}"
                placeholder="Supplier Location">
 
+
         <input type="text"
                name="delivery_location"
                value="{{ product['delivery_location'] or '' }}"
                placeholder="Delivery Location">
 
-        <button type="submit">Update Product</button>
+
+        <!-- Delivery Date -->
+
+        <label>
+            📅 Expected Delivery Date
+        </label>
+
+        <input type="date"
+               name="delivery_date"
+               value="{{ product['delivery_date'] or '' }}"
+               required>
+
+
+        <!-- Delivery Time -->
+
+        <label>
+            🕐 Expected Delivery Time
+        </label>
+
+        <input type="time"
+               name="delivery_time"
+               value="{{ product['delivery_time'] or '' }}"
+               required>
+
+
+        <button type="submit">
+            Update Product
+        </button>
+
 
     </form>
 
+
     <br>
+
+
+    <a href="/">
+        ⬅️ Back to Inventory
+    </a>
+
+
+</body>
+
+</html>
+```
