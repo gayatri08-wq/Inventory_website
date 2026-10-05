@@ -1,38 +1,49 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+
     <title>Inventory Management System</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
+
 </head>
+
 
 <body>
 
     <h1>📦 Inventory Management System</h1>
 
+
     <h2>➕ Add Product</h2>
 
+
     <form action="/add" method="POST">
+
 
         <input type="text"
                name="product_id"
                placeholder="Product ID"
                required>
 
+
         <input type="text"
                name="name"
                placeholder="Product Name"
                required>
 
+
         <input type="text"
                name="category"
                placeholder="Category">
+
 
         <input type="number"
                name="quantity"
                placeholder="Quantity"
                required>
+
 
         <input type="number"
                step="0.01"
@@ -40,138 +51,287 @@
                placeholder="Price"
                required>
 
+
         <input type="text"
                name="supplier"
                placeholder="Supplier">
+
 
         <input type="text"
                name="supplier_location"
                placeholder="Supplier Location (e.g. Mumbai)"
                required>
 
+
         <input type="text"
                name="delivery_location"
                placeholder="Delivery Location (e.g. Thane)"
                required>
 
-        <button type="submit">Add Product</button>
+
+        <!-- Delivery Date -->
+
+        <label>
+            📅 Expected Delivery Date
+        </label>
+
+        <input type="date"
+               name="delivery_date"
+               required>
+
+
+        <!-- Delivery Time -->
+
+        <label>
+            🕐 Expected Delivery Time
+        </label>
+
+        <input type="time"
+               name="delivery_time"
+               required>
+
+
+        <button type="submit">
+            Add Product
+        </button>
+
 
     </form>
 
 
     <h2>📋 Products</h2>
 
+
     <form action="/search" method="GET">
+
 
         <input type="text"
                name="keyword"
                placeholder="Search Product">
 
-        <button type="submit">🔍 Search</button>
+
+        <button type="submit">
+            🔍 Search
+        </button>
+
 
     </form>
 
-    <a href="/">Show All Products</a>
+
+    <a href="/">
+        Show All Products
+    </a>
+
 
     <br><br>
+
 
     <a href="/low-stock">
         ⚠️ Low Stock Products
     </a>
+
 
     <br><br>
 
 
     <table>
 
+
         <tr>
+
             <th>ID</th>
+
             <th>Name</th>
+
             <th>Category</th>
+
             <th>Quantity</th>
+
             <th>Price</th>
+
             <th>Supplier</th>
+
             <th>Supplier Location</th>
+
             <th>Delivery Location</th>
+
+            <th>Delivery Date</th>
+
+            <th>Delivery Time</th>
+
             <th>Route</th>
+
             <th>Action</th>
+
         </tr>
 
 
         {% for product in products %}
 
+
         <tr>
 
-            <td>{{ product['id'] }}</td>
-
-            <td>{{ product['name'] }}</td>
-
-            <td>{{ product['category'] }}</td>
-
-            <td>{{ product['quantity'] }}</td>
-
-            <td>₹{{ product['price'] }}</td>
-
-            <td>{{ product['supplier'] }}</td>
 
             <td>
+                {{ product['id'] }}
+            </td>
+
+
+            <td>
+                {{ product['name'] }}
+            </td>
+
+
+            <td>
+                {{ product['category'] }}
+            </td>
+
+
+            <td>
+                {{ product['quantity'] }}
+            </td>
+
+
+            <td>
+                ₹{{ product['price'] }}
+            </td>
+
+
+            <td>
+                {{ product['supplier'] }}
+            </td>
+
+
+            <td>
+
                 {{ product['supplier_location'] or 'Not Available' }}
+
             </td>
 
+
             <td>
+
                 {{ product['delivery_location'] or 'Not Available' }}
+
             </td>
+
+
+            <!-- Delivery Date -->
 
             <td>
 
-                {% if product['supplier_location'] and product['delivery_location'] %}
+                {% if product['delivery_date'] %}
 
-                <a href="/map/{{ product['id'] }}">
-                    🗺️ View Map & Route
-                </a>
+                    📅 {{ product['delivery_date'] }}
 
                 {% else %}
 
-                Not Available
+                    Not Available
 
                 {% endif %}
 
             </td>
 
 
+            <!-- Delivery Time -->
+
             <td>
 
-                <a href="/delete/{{ product['id'] }}"
-                   onclick="return confirm('Delete this product?')">
-                    Delete
-                </a>
+                {% if product['delivery_time'] %}
 
-                |
+                    🕐 {{ product['delivery_time'] }}
 
-                <a href="/edit/{{ product['id'] }}">
-                    Edit
-                </a>
+                {% else %}
 
-                |
+                    Not Available
 
-                <a href="/stock-out/{{ product['id'] }}">
-                    Stock Out
-                </a>
-
-                |
-
-                <a href="/bill/{{ product['id'] }}">
-                    Bill
-                </a>
+                {% endif %}
 
             </td>
 
+
+            <!-- Route -->
+
+            <td>
+
+
+                {% if product['supplier_location'] and product['delivery_location'] %}
+
+
+                    <a href="/map/{{ product['id'] }}">
+
+                        🗺️ View Map & Route
+
+                    </a>
+
+
+                {% else %}
+
+
+                    Not Available
+
+
+                {% endif %}
+
+
+            </td>
+
+
+            <!-- Actions -->
+
+            <td>
+
+
+                <a href="/delete/{{ product['id'] }}"
+                   onclick="return confirm('Delete this product?')">
+
+                    Delete
+
+                </a>
+
+
+                |
+
+
+                <a href="/edit/{{ product['id'] }}">
+
+                    Edit
+
+                </a>
+
+
+                |
+
+
+                <a href="/stock-out/{{ product['id'] }}">
+
+                    Stock Out
+
+                </a>
+
+
+                |
+
+
+                <a href="/bill/{{ product['id'] }}">
+
+                    Bill
+
+                </a>
+
+
+            </td>
+
+
         </tr>
 
+
         {% endfor %}
+
 
     </table>
 
 
 </body>
+
 </html>
