@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-
     <title>Product Route Map</title>
 
     <meta charset="UTF-8">
@@ -13,217 +12,268 @@
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
     <style>
-
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
         }
 
         h1 {
             text-align: center;
+            color: #222;
         }
 
-        .location-box {
+        .details {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .details p {
+            font-size: 17px;
+            margin: 10px 0;
+        }
+
+        .eta-box {
+            background: #e8f5e9;
+            border-left: 5px solid #2e7d32;
             padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
+            margin-top: 15px;
             border-radius: 8px;
+        }
+
+        .eta-box h2 {
+            margin-top: 0;
+            color: #2e7d32;
         }
 
         #map {
             height: 500px;
             width: 100%;
             border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
-        .back-button {
+        .back {
             display: inline-block;
-            margin-top: 15px;
-            padding: 10px 15px;
-            background: #333;
+            margin-top: 20px;
+            padding: 10px 18px;
+            background: #1976d2;
             color: white;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 6px;
         }
-
     </style>
-
 </head>
 
 <body>
 
-    <h1>🗺️ Supplier → Delivery Route</h1>
+<h1>🗺️ Supplier → Delivery Route</h1>
 
-    <div class="location-box">
+<div class="details">
 
-        <p>
-            <strong>Product:</strong>
-            {{ product['name'] }}
-        </p>
+    <p>
+        <strong>Product:</strong>
+        {{ product['name'] }}
+    </p>
 
-        <p>
-            <strong>Supplier:</strong>
-            {{ product['supplier'] }}
-        </p>
+    <p>
+        <strong>Supplier:</strong>
+        {{ product['supplier'] }}
+    </p>
 
-        <p>
-            <strong>Supplier Location:</strong>
-            {{ product['supplier_location'] }}
-        </p>
+    <p>
+        <strong>Import / Supplier Location:</strong>
+        {{ product['supplier_location'] }}
+    </p>
 
-        <p>
-            <strong>Delivery Location:</strong>
-            {{ product['delivery_location'] }}
-        </p>
+    <p>
+        <strong>Export / Delivery Location:</strong>
+        {{ product['delivery_location'] }}
+    </p>
+
+    <div class="eta-box">
+
+        <h2>🚚 Delivery Information</h2>
+
+        {% if product['delivery_date'] and product['delivery_time'] %}
+
+            <p>
+                📅 <strong>Estimated Delivery:</strong>
+                {{ product['delivery_date'] }}
+            </p>
+
+            <p>
+                ⏰ <strong>Estimated Arrival Time:</strong>
+                {{ product['delivery_time'] }}
+            </p>
+
+            <p>
+                📍 <strong>Status:</strong>
+                In Transit
+            </p>
+
+        {% else %}
+
+            <p>
+                ⚠️ Delivery ETA could not be calculated.
+                Please check the location names.
+            </p>
+
+        {% endif %}
 
     </div>
 
-    <div id="map"></div>
+</div>
 
-    <a href="/" class="back-button">
-        ⬅️ Back to Inventory
-    </a>
+<div id="map"></div>
 
+<a href="/" class="back">
+    ← Back to Inventory
+</a>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script>
+<script>
 
-        // Supplier and delivery locations
-        const supplierLocation =
-            "{{ product['supplier_location'] }}";
+    const supplierLocation =
+        "{{ product['supplier_location'] }}";
 
-        const deliveryLocation =
-            "{{ product['delivery_location'] }}";
-
-
-        // Create map
-        const map = L.map('map').setView(
-            [19.0760, 72.8777],
-            10
-        );
+    const deliveryLocation =
+        "{{ product['delivery_location'] }}";
 
 
-        // OpenStreetMap
+    async function getCoordinates(location) {
+
+        const url =
+            "https://nominatim.openstreetmap.org/search?format=json&limit=1&q="
+            + encodeURIComponent(location);
+
+        const response = await fetch(url);
+
+        const data = await response.json();
+
+        if (data.length === 0) {
+            return null;
+        }
+
+        return [
+            parseFloat(data[0].lat),
+            parseFloat(data[0].lon)
+        ];
+    }
+
+
+    async function showMap() {
+
+        const supplier =
+            await getCoordinates(supplierLocation);
+
+        const delivery =
+            await getCoordinates(deliveryLocation);
+
+
+        if (!supplier || !delivery) {
+
+            document.getElementById("map").innerHTML =
+                "<p style='padding:20px;'>Location not found.</p>";
+
+            return;
+        }
+
+
+        const map =
+            L.map("map").setView(supplier, 6);
+
+
         L.tileLayer(
-            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
             {
-                attribution: '&copy; OpenStreetMap contributors'
+                maxZoom: 19,
+                attribution:
+                    "&copy; OpenStreetMap contributors"
             }
         ).addTo(map);
 
 
-        // Geocoding function
-        async function getCoordinates(location) {
+        L.marker(supplier)
+            .addTo(map)
+            .bindPopup(
+                "<b>📦 Supplier</b><br>"
+                + supplierLocation
+            )
+            .openPopup();
 
-            const url =
-                "https://nominatim.openstreetmap.org/search?format=json&q="
-                + encodeURIComponent(location);
 
-            const response = await fetch(url);
+        L.marker(delivery)
+            .addTo(map)
+            .bindPopup(
+                "<b>🏠 Delivery Location</b><br>"
+                + deliveryLocation
+            );
 
-            const data = await response.json();
 
-            if (data.length === 0) {
-                throw new Error(
-                    "Location not found: " + location
+        const routeUrl =
+            "https://router.project-osrm.org/route/v1/driving/"
+            + supplier[1] + ","
+            + supplier[0] + ";"
+            + delivery[1] + ","
+            + delivery[0]
+            + "?overview=full&geometries=geojson";
+
+
+        const routeResponse =
+            await fetch(routeUrl);
+
+        const routeData =
+            await routeResponse.json();
+
+
+        if (
+            routeData.routes &&
+            routeData.routes.length > 0
+        ) {
+
+            const route =
+                routeData.routes[0];
+
+
+            const coordinates =
+                route.geometry.coordinates.map(
+                    function(point) {
+                        return [
+                            point[1],
+                            point[0]
+                        ];
+                    }
                 );
-            }
-
-            return [
-                parseFloat(data[0].lat),
-                parseFloat(data[0].lon)
-            ];
-        }
 
 
-        // Load map route
-        async function loadRoute() {
-
-            try {
-
-                const supplier =
-                    await getCoordinates(supplierLocation);
-
-                const delivery =
-                    await getCoordinates(deliveryLocation);
-
-
-                // Supplier marker
-                L.marker(supplier)
-                    .addTo(map)
-                    .bindPopup(
-                        "📦 Supplier<br>" +
-                        supplierLocation
-                    )
-                    .openPopup();
-
-
-                // Delivery marker
-                L.marker(delivery)
-                    .addTo(map)
-                    .bindPopup(
-                        "🚚 Delivery<br>" +
-                        deliveryLocation
-                    );
-
-
-                // Route using OSRM
-                const routeURL =
-                    "https://router.project-osrm.org/route/v1/driving/"
-                    + supplier[1] + "," + supplier[0]
-                    + ";"
-                    + delivery[1] + "," + delivery[0]
-                    + "?overview=full&geometries=geojson";
-
-
-                const routeResponse =
-                    await fetch(routeURL);
-
-                const routeData =
-                    await routeResponse.json();
-
-
-                if (
-                    routeData.routes &&
-                    routeData.routes.length > 0
-                ) {
-
-                    const route =
-                        routeData.routes[0];
-
-                    L.geoJSON(route.geometry)
-                        .addTo(map);
-
-                    map.fitBounds(
-                        L.geoJSON(route.geometry)
-                            .getBounds()
-                    );
-
-                } else {
-
-                    alert(
-                        "Route could not be found."
-                    );
-
+            L.polyline(
+                coordinates,
+                {
+                    weight: 5
                 }
+            ).addTo(map);
 
-            } catch (error) {
 
-                console.error(error);
-
-                alert(
-                    "Location or route could not be found."
-                );
-
-            }
-
+            map.fitBounds(
+                coordinates,
+                {
+                    padding: [30, 30]
+                }
+            );
         }
 
+    }
 
-        loadRoute();
 
-    </script>
+    showMap();
+
+</script>
 
 </body>
 </html>
