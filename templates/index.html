@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html>
 
@@ -57,37 +58,19 @@
                placeholder="Supplier">
 
 
+        <!-- Supplier / Import Location -->
+
         <input type="text"
                name="supplier_location"
-               placeholder="Supplier Location (e.g. Mumbai)"
+               placeholder="📍 Import Location (e.g. Mumbai)"
                required>
 
+
+        <!-- Delivery / Export Location -->
 
         <input type="text"
                name="delivery_location"
-               placeholder="Delivery Location (e.g. Thane)"
-               required>
-
-
-        <!-- Delivery Date -->
-
-        <label>
-            📅 Expected Delivery Date
-        </label>
-
-        <input type="date"
-               name="delivery_date"
-               required>
-
-
-        <!-- Delivery Time -->
-
-        <label>
-            🕐 Expected Delivery Time
-        </label>
-
-        <input type="time"
-               name="delivery_time"
+               placeholder="📍 Export / Delivery Location (e.g. Pune)"
                required>
 
 
@@ -116,6 +99,9 @@
 
 
     </form>
+
+
+    <br>
 
 
     <a href="/">
@@ -151,13 +137,11 @@
 
             <th>Supplier</th>
 
-            <th>Supplier Location</th>
+            <th>Import Location</th>
 
-            <th>Delivery Location</th>
+            <th>Export / Delivery Location</th>
 
-            <th>Delivery Date</th>
-
-            <th>Delivery Time</th>
+            <th>Estimated Delivery</th>
 
             <th>Route</th>
 
@@ -202,27 +186,13 @@
             </td>
 
 
-            <td>
-
-                {{ product['supplier_location'] or 'Not Available' }}
-
-            </td>
-
+            <!-- Import Location -->
 
             <td>
 
-                {{ product['delivery_location'] or 'Not Available' }}
+                {% if product['supplier_location'] %}
 
-            </td>
-
-
-            <!-- Delivery Date -->
-
-            <td>
-
-                {% if product['delivery_date'] %}
-
-                    📅 {{ product['delivery_date'] }}
+                    📍 {{ product['supplier_location'] }}
 
                 {% else %}
 
@@ -233,46 +203,62 @@
             </td>
 
 
-            <!-- Delivery Time -->
+            <!-- Export / Delivery Location -->
 
             <td>
 
-                {% if product['delivery_time'] %}
+                {% if product['delivery_location'] %}
+
+                    📍 {{ product['delivery_location'] }}
+
+                {% else %}
+
+                    Not Available
+
+                {% endif %}
+
+            </td>
+
+
+            <!-- Automatic Estimated Delivery -->
+
+            <td>
+
+                {% if product['delivery_date'] and product['delivery_time'] %}
+
+                    📅 {{ product['delivery_date'] }}<br>
 
                     🕐 {{ product['delivery_time'] }}
 
                 {% else %}
 
-                    Not Available
+                    ⏳ Calculating...
 
                 {% endif %}
 
             </td>
 
 
-            <!-- Route -->
+            <!-- Map -->
 
             <td>
 
-
-                {% if product['supplier_location'] and product['delivery_location'] %}
+                {% if product['supplier_location']
+                      and product['delivery_location'] %}
 
 
                     <a href="/map/{{ product['id'] }}">
 
-                        🗺️ View Map & Route
+                        🗺️ View Location & Route
 
                     </a>
 
 
                 {% else %}
 
-
                     Not Available
 
-
                 {% endif %}
-
 
             </td>
 
@@ -335,3 +321,4 @@
 </body>
 
 </html>
+```
