@@ -126,9 +126,8 @@
 
                 {% if product['supplier_location'] and product['delivery_location'] %}
 
-                <a href="https://www.google.com/maps/dir/?api=1&origin={{ product['supplier_location'] | urlencode }}&destination={{ product['delivery_location'] | urlencode }}"
-                   target="_blank">
-                    🗺️ View Route
+                <a href="/map/{{ product['id'] }}">
+                    🗺️ View Map & Route
                 </a>
 
                 {% else %}
