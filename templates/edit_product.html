@@ -41,16 +41,21 @@
 
         <input type="text"
                name="supplier"
-               value="{{ product['supplier'] }}"
+               value="{{ product['supplier'] or '' }}"
                placeholder="Supplier">
+
+        <input type="text"
+               name="supplier_location"
+               value="{{ product['supplier_location'] or '' }}"
+               placeholder="Supplier Location">
+
+        <input type="text"
+               name="delivery_location"
+               value="{{ product['delivery_location'] or '' }}"
+               placeholder="Delivery Location">
 
         <button type="submit">Update Product</button>
 
     </form>
 
     <br>
-
-    <a href="/">⬅ Back to Products</a>
-
-</body>
-</html>
