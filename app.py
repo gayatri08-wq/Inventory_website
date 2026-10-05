@@ -14,8 +14,9 @@ def get_db():
     return conn
 
 
-# Create table and add new columns safely
+# Create table and safely add new columns
 def create_table():
+
     conn = get_db()
 
     conn.execute("""
@@ -34,16 +35,21 @@ def create_table():
     # Check existing columns
     columns = [
         row["name"]
-        for row in conn.execute("PRAGMA table_info(products)").fetchall()
+        for row in conn.execute(
+            "PRAGMA table_info(products)"
+        ).fetchall()
     ]
 
-    # Add new columns if they do not already exist
+    # Add Supplier Location if missing
     if "supplier_location" not in columns:
+
         conn.execute(
             "ALTER TABLE products ADD COLUMN supplier_location TEXT"
         )
 
+    # Add Delivery Location if missing
     if "delivery_location" not in columns:
+
         conn.execute(
             "ALTER TABLE products ADD COLUMN delivery_location TEXT"
         )
@@ -160,6 +166,7 @@ def edit_product(product_id):
     conn.close()
 
     if product is None:
+
         return "Product not found"
 
     return render_template(
@@ -225,6 +232,7 @@ def stock_out_page(product_id):
     conn.close()
 
     if product is None:
+
         return "Product not found"
 
     return render_template(
@@ -326,6 +334,29 @@ def low_stock():
     )
 
 
+# Product Route Map
+@app.route("/map/<product_id>")
+def product_map(product_id):
+
+    conn = get_db()
+
+    product = conn.execute(
+        "SELECT * FROM products WHERE id = ?",
+        (product_id,)
+    ).fetchone()
+
+    conn.close()
+
+    if product is None:
+
+        return "Product not found"
+
+    return render_template(
+        "map.html",
+        product=product
+    )
+
+
 # Generate bill
 @app.route("/bill/<product_id>")
 def bill(product_id):
@@ -340,6 +371,7 @@ def bill(product_id):
     conn.close()
 
     if product is None:
+
         return "Product not found"
 
     return render_template(
