@@ -43,9 +43,14 @@ def create_table():
         )
     """)
 
-    # Existing database ke liye missing columns automatically add honge
+    existing_columns = [
+        row["name"]
+        for row in conn.execute(
+            "PRAGMA table_info(products)"
+        ).fetchall()
+    ]
 
-    columns = [
+    required_columns = [
         ("product_id", "TEXT"),
         ("supplier_location", "TEXT"),
         ("delivery_location", "TEXT"),
@@ -53,17 +58,13 @@ def create_table():
         ("delivery_time", "TEXT")
     ]
 
-    existing_columns = [
-        row["name"]
-        for row in conn.execute("PRAGMA table_info(products)").fetchall()
-    ]
-
-    for column_name, column_type in columns:
+    for column_name, column_type in required_columns:
 
         if column_name not in existing_columns:
 
             conn.execute(
-                f"ALTER TABLE products ADD COLUMN {column_name} {column_type}"
+                f"ALTER TABLE products ADD COLUMN "
+                f"{column_name} {column_type}"
             )
 
     conn.commit()
@@ -71,7 +72,7 @@ def create_table():
 
 
 # =========================================================
-# LOCATION CLEANING
+# CLEAN LOCATION
 # =========================================================
 
 def clean_location(location):
@@ -85,50 +86,98 @@ def clean_location(location):
 
     location_map = {
 
-        "mumbai": "Mumbai, Maharashtra, India",
-        "bombay": "Mumbai, Maharashtra, India",
+        "mumbai":
+            "Mumbai, Maharashtra, India",
 
-        "kurla": "Kurla, Mumbai, Maharashtra, India",
-        "kura": "Kurla, Mumbai, Maharashtra, India",
+        "bombay":
+            "Mumbai, Maharashtra, India",
 
-        "pune": "Pune, Maharashtra, India",
+        "kurla":
+            "Kurla, Mumbai, Maharashtra, India",
 
-        "thane": "Thane, Maharashtra, India",
+        "thane":
+            "Thane, Maharashtra, India",
 
-        "navi mumbai": "Navi Mumbai, Maharashtra, India",
+        "navi mumbai":
+            "Navi Mumbai, Maharashtra, India",
 
-        "nashik": "Nashik, Maharashtra, India",
+        "pune":
+            "Pune, Maharashtra, India",
 
-        "nagpur": "Nagpur, Maharashtra, India",
+        "nashik":
+            "Nashik, Maharashtra, India",
 
-        "surat": "Surat, Gujarat, India",
+        "nagpur":
+            "Nagpur, Maharashtra, India",
 
-        "ahmedabad": "Ahmedabad, Gujarat, India",
+        "aurangabad":
+            "Chhatrapati Sambhajinagar, Maharashtra, India",
 
-        "delhi": "Delhi, India",
+        "chhatrapati sambhajinagar":
+            "Chhatrapati Sambhajinagar, Maharashtra, India",
 
-        "new delhi": "New Delhi, Delhi, India",
+        "kolhapur":
+            "Kolhapur, Maharashtra, India",
 
-        "bangalore": "Bengaluru, Karnataka, India",
+        "solapur":
+            "Solapur, Maharashtra, India",
 
-        "bengaluru": "Bengaluru, Karnataka, India",
+        "surat":
+            "Surat, Gujarat, India",
 
-        "hyderabad": "Hyderabad, Telangana, India",
+        "ahmedabad":
+            "Ahmedabad, Gujarat, India",
 
-        "chennai": "Chennai, Tamil Nadu, India",
+        "vadodara":
+            "Vadodara, Gujarat, India",
 
-        "kolkata": "Kolkata, West Bengal, India",
+        "rajkot":
+            "Rajkot, Gujarat, India",
 
-        "jaipur": "Jaipur, Rajasthan, India",
+        "delhi":
+            "Delhi, India",
 
-        "indore": "Indore, Madhya Pradesh, India"
+        "new delhi":
+            "New Delhi, Delhi, India",
+
+        "jaipur":
+            "Jaipur, Rajasthan, India",
+
+        "indore":
+            "Indore, Madhya Pradesh, India",
+
+        "bhopal":
+            "Bhopal, Madhya Pradesh, India",
+
+        "hyderabad":
+            "Hyderabad, Telangana, India",
+
+        "bangalore":
+            "Bengaluru, Karnataka, India",
+
+        "bengaluru":
+            "Bengaluru, Karnataka, India",
+
+        "chennai":
+            "Chennai, Tamil Nadu, India",
+
+        "kolkata":
+            "Kolkata, West Bengal, India",
+
+        "lucknow":
+            "Lucknow, Uttar Pradesh, India",
+
+        "patna":
+            "Patna, Bihar, India",
+
+        "goa":
+            "Goa, India"
     }
 
     if location_lower in location_map:
 
         return location_map[location_lower]
 
-    # Agar already India hai
     if "india" in location_lower:
 
         return location
@@ -137,19 +186,19 @@ def clean_location(location):
 
 
 # =========================================================
-# GET LOCATION COORDINATES
+# GET COORDINATES
 # =========================================================
 
 def get_coordinates(location):
 
     try:
 
-        cleaned = clean_location(location)
+        cleaned_location = clean_location(location)
 
         url = "https://nominatim.openstreetmap.org/search"
 
         params = {
-            "q": cleaned,
+            "q": cleaned_location,
             "format": "json",
             "limit": 5,
             "countrycodes": "in",
@@ -157,7 +206,8 @@ def get_coordinates(location):
         }
 
         headers = {
-            "User-Agent": "InventoryManagementSystem/1.0"
+            "User-Agent":
+                "InventoryManagementSystem/1.0"
         }
 
         response = requests.get(
@@ -174,9 +224,15 @@ def get_coordinates(location):
 
         for result in results:
 
-            address = result.get("address", {})
+            address = result.get(
+                "address",
+                {}
+            )
 
-            country = address.get("country", "").lower()
+            country = address.get(
+                "country",
+                ""
+            ).lower()
 
             if country == "india":
 
@@ -185,7 +241,6 @@ def get_coordinates(location):
                     float(result["lon"])
                 )
 
-        # Fallback
         if results:
 
             return (
@@ -193,9 +248,12 @@ def get_coordinates(location):
                 float(results[0]["lon"])
             )
 
-    except Exception as e:
+    except Exception as error:
 
-        print("Geocoding error:", e)
+        print(
+            "Geocoding error:",
+            error
+        )
 
     return None
 
@@ -204,16 +262,21 @@ def get_coordinates(location):
 # HAVERSINE DISTANCE
 # =========================================================
 
-def haversine_distance(lat1, lon1, lat2, lon2):
+def haversine_distance(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+):
 
-    R = 6371
+    earth_radius = 6371
 
     lat1 = math.radians(lat1)
     lat2 = math.radians(lat2)
 
     dlat = lat2 - lat1
 
-    dlon = math.radians(lon2) - math.radians(lon1)
+    dlon = math.radians(lon2 - lon1)
 
     a = (
         math.sin(dlat / 2) ** 2
@@ -228,7 +291,7 @@ def haversine_distance(lat1, lon1, lat2, lon2):
         math.sqrt(1 - a)
     )
 
-    return R * c
+    return earth_radius * c
 
 
 # =========================================================
@@ -240,26 +303,51 @@ def calculate_delivery_eta(
     delivery_location
 ):
 
-    origin = get_coordinates(supplier_location)
+    # -----------------------------------------------------
+    # Default fallback
+    # -----------------------------------------------------
 
-    destination = get_coordinates(delivery_location)
+    fallback_arrival = (
+        datetime.now()
+        + timedelta(days=3)
+    )
+
+    origin = get_coordinates(
+        supplier_location
+    )
+
+    destination = get_coordinates(
+        delivery_location
+    )
+
+    # -----------------------------------------------------
+    # Location not found
+    # -----------------------------------------------------
 
     if not origin or not destination:
 
-        return None, None
+        return (
+            fallback_arrival.strftime(
+                "%Y-%m-%d"
+            ),
+            fallback_arrival.strftime(
+                "%I:%M %p"
+            )
+        )
 
     origin_lat, origin_lon = origin
 
     destination_lat, destination_lon = destination
 
     # -----------------------------------------------------
-    # Try OSRM driving route
+    # OSRM ROAD ROUTE
     # -----------------------------------------------------
 
     try:
 
         route_url = (
-            "https://router.project-osrm.org/route/v1/driving/"
+            "https://router.project-osrm.org/"
+            "route/v1/driving/"
             f"{origin_lon},{origin_lat};"
             f"{destination_lon},{destination_lat}"
         )
@@ -278,57 +366,91 @@ def calculate_delivery_eta(
 
             data = response.json()
 
-            routes = data.get("routes", [])
+            routes = data.get(
+                "routes",
+                []
+            )
 
             if routes:
 
-                duration_seconds = routes[0]["duration"]
-
-                distance_meters = routes[0]["distance"]
-
-                distance_km = distance_meters / 1000
-
-                duration = timedelta(
-                    seconds=duration_seconds
+                duration_seconds = (
+                    routes[0]["duration"]
                 )
 
-                arrival = datetime.now() + duration
+                arrival = (
+                    datetime.now()
+                    + timedelta(
+                        seconds=duration_seconds
+                    )
+                )
 
                 return (
-                    arrival.strftime("%Y-%m-%d"),
-                    arrival.strftime("%I:%M %p")
+                    arrival.strftime(
+                        "%Y-%m-%d"
+                    ),
+                    arrival.strftime(
+                        "%I:%M %p"
+                    )
                 )
 
-    except Exception as e:
+    except Exception as error:
 
-        print("OSRM route error:", e)
+        print(
+            "OSRM error:",
+            error
+        )
 
     # -----------------------------------------------------
-    # Fallback calculation
+    # FALLBACK DISTANCE
     # -----------------------------------------------------
 
-    distance_km = haversine_distance(
-        origin_lat,
-        origin_lon,
-        destination_lat,
-        destination_lon
-    )
+    try:
 
-    # Average speed = 40 km/hour
-    average_speed = 40
+        distance_km = haversine_distance(
+            origin_lat,
+            origin_lon,
+            destination_lat,
+            destination_lon
+        )
 
-    travel_hours = distance_km / average_speed
+        # Average road speed
+        average_speed = 40
 
-    travel_seconds = travel_hours * 3600
+        travel_hours = (
+            distance_km / average_speed
+        )
 
-    arrival = datetime.now() + timedelta(
-        seconds=travel_seconds
-    )
+        arrival = (
+            datetime.now()
+            + timedelta(
+                hours=travel_hours
+            )
+        )
 
-    return (
-        arrival.strftime("%Y-%m-%d"),
-        arrival.strftime("%I:%M %p")
-    )
+        return (
+            arrival.strftime(
+                "%Y-%m-%d"
+            ),
+            arrival.strftime(
+                "%I:%M %p"
+            )
+        )
+
+    except Exception as error:
+
+        print(
+            "Fallback ETA error:",
+            error
+        )
+
+        return (
+            fallback_arrival.strftime(
+                "%Y-%m-%d"
+            ),
+            fallback_arrival.strftime(
+                "%I:%M %p"
+            )
+        )
 
 
 # =========================================================
@@ -341,7 +463,11 @@ def index():
     conn = get_db()
 
     products = conn.execute(
-        "SELECT * FROM products ORDER BY id DESC"
+        """
+        SELECT *
+        FROM products
+        ORDER BY id DESC
+        """
     ).fetchall()
 
     conn.close()
@@ -356,7 +482,10 @@ def index():
 # ADD PRODUCT
 # =========================================================
 
-@app.route("/add", methods=["POST"])
+@app.route(
+    "/add",
+    methods=["POST"]
+)
 def add_product():
 
     product_id = request.form.get(
@@ -400,22 +529,28 @@ def add_product():
     ).strip()
 
     # -----------------------------------------------------
-    # Automatic ETA
+    # DELIVERY ETA
     # -----------------------------------------------------
 
     delivery_date = None
     delivery_time = None
 
-    if supplier_location and delivery_location:
+    if (
+        supplier_location
+        and delivery_location
+    ):
 
-        delivery_date, delivery_time = calculate_delivery_eta(
-            supplier_location,
-            delivery_location
+        delivery_date, delivery_time = (
+            calculate_delivery_eta(
+                supplier_location,
+                delivery_location
+            )
         )
 
     conn = get_db()
 
-    conn.execute("""
+    conn.execute(
+        """
         INSERT INTO products
         (
             product_id,
@@ -430,58 +565,69 @@ def add_product():
             delivery_time
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        product_id,
-        name,
-        category,
-        quantity,
-        price,
-        supplier,
-        supplier_location,
-        delivery_location,
-        delivery_date,
-        delivery_time
-    ))
+        """,
+        (
+            product_id,
+            name,
+            category,
+            quantity,
+            price,
+            supplier,
+            supplier_location,
+            delivery_location,
+            delivery_date,
+            delivery_time
+        )
+    )
 
     conn.commit()
-
     conn.close()
 
     return redirect("/")
 
 
 # =========================================================
-# DELETE PRODUCT
+# DELETE
 # =========================================================
 
-@app.route("/delete/<int:id>")
+@app.route(
+    "/delete/<int:id>"
+)
 def delete_product(id):
 
     conn = get_db()
 
     conn.execute(
-        "DELETE FROM products WHERE id = ?",
+        """
+        DELETE FROM products
+        WHERE id = ?
+        """,
         (id,)
     )
 
     conn.commit()
-
     conn.close()
 
     return redirect("/")
 
 
 # =========================================================
-# EDIT PRODUCT
+# EDIT
 # =========================================================
 
-@app.route("/edit/<int:id>")
+@app.route(
+    "/edit/<int:id>"
+)
 def edit_product(id):
 
     conn = get_db()
 
     product = conn.execute(
-        "SELECT * FROM products WHERE id = ?",
+        """
+        SELECT *
+        FROM products
+        WHERE id = ?
+        """,
         (id,)
     ).fetchone()
 
@@ -498,10 +644,13 @@ def edit_product(id):
 
 
 # =========================================================
-# UPDATE PRODUCT
+# UPDATE
 # =========================================================
 
-@app.route("/update/<int:id>", methods=["POST"])
+@app.route(
+    "/update/<int:id>",
+    methods=["POST"]
+)
 def update_product(id):
 
     product_id = request.form.get(
@@ -544,20 +693,25 @@ def update_product(id):
         ""
     ).strip()
 
-    # Automatic ETA again
     delivery_date = None
     delivery_time = None
 
-    if supplier_location and delivery_location:
+    if (
+        supplier_location
+        and delivery_location
+    ):
 
-        delivery_date, delivery_time = calculate_delivery_eta(
-            supplier_location,
-            delivery_location
+        delivery_date, delivery_time = (
+            calculate_delivery_eta(
+                supplier_location,
+                delivery_location
+            )
         )
 
     conn = get_db()
 
-    conn.execute("""
+    conn.execute(
+        """
         UPDATE products
 
         SET
@@ -573,22 +727,23 @@ def update_product(id):
             delivery_time = ?
 
         WHERE id = ?
-    """, (
-        product_id,
-        name,
-        category,
-        quantity,
-        price,
-        supplier,
-        supplier_location,
-        delivery_location,
-        delivery_date,
-        delivery_time,
-        id
-    ))
+        """,
+        (
+            product_id,
+            name,
+            category,
+            quantity,
+            price,
+            supplier,
+            supplier_location,
+            delivery_location,
+            delivery_date,
+            delivery_time,
+            id
+        )
+    )
 
     conn.commit()
-
     conn.close()
 
     return redirect("/")
@@ -598,13 +753,20 @@ def update_product(id):
 # STOCK OUT
 # =========================================================
 
-@app.route("/stock-out/<int:id>", methods=["GET", "POST"])
+@app.route(
+    "/stock-out/<int:id>",
+    methods=["GET", "POST"]
+)
 def stock_out(id):
 
     conn = get_db()
 
     product = conn.execute(
-        "SELECT * FROM products WHERE id = ?",
+        """
+        SELECT *
+        FROM products
+        WHERE id = ?
+        """,
         (id,)
     ).fetchone()
 
@@ -623,12 +785,15 @@ def stock_out(id):
             )
         )
 
-        current_quantity = product["quantity"]
+        current_quantity = (
+            product["quantity"] or 0
+        )
 
-        new_quantity = current_quantity - quantity
+        new_quantity = (
+            current_quantity - quantity
+        )
 
         if new_quantity < 0:
-
             new_quantity = 0
 
         conn.execute(
@@ -644,7 +809,6 @@ def stock_out(id):
         )
 
         conn.commit()
-
         conn.close()
 
         return redirect("/")
@@ -673,12 +837,15 @@ def search():
 
     products = conn.execute(
         """
-        SELECT * FROM products
+        SELECT *
+        FROM products
+
         WHERE
             product_id LIKE ?
             OR name LIKE ?
             OR category LIKE ?
             OR supplier LIKE ?
+
         ORDER BY id DESC
         """,
         (
@@ -708,8 +875,11 @@ def low_stock():
 
     products = conn.execute(
         """
-        SELECT * FROM products
+        SELECT *
+        FROM products
+
         WHERE quantity <= 5
+
         ORDER BY quantity ASC
         """
     ).fetchall()
@@ -723,17 +893,20 @@ def low_stock():
 
 
 # =========================================================
-# MAP / ROUTE
+# MAP
 # =========================================================
 
-@app.route("/map/<int:id>")
+@app.route(
+    "/map/<int:id>"
+)
 def product_map(id):
 
     conn = get_db()
 
     product = conn.execute(
         """
-        SELECT * FROM products
+        SELECT *
+        FROM products
         WHERE id = ?
         """,
         (id,)
@@ -755,14 +928,17 @@ def product_map(id):
 # BILL
 # =========================================================
 
-@app.route("/bill/<int:id>")
+@app.route(
+    "/bill/<int:id>"
+)
 def bill(id):
 
     conn = get_db()
 
     product = conn.execute(
         """
-        SELECT * FROM products
+        SELECT *
+        FROM products
         WHERE id = ?
         """,
         (id,)
@@ -781,7 +957,7 @@ def bill(id):
 
 
 # =========================================================
-# START APPLICATION
+# START
 # =========================================================
 
 create_table()
