@@ -9,9 +9,9 @@ app = Flask(__name__)
 DATABASE = "inventory.db"
 
 
-# -----------------------------------------
+# =========================================================
 # DATABASE CONNECTION
-# -----------------------------------------
+# =========================================================
 
 def get_db():
     conn = sqlite3.connect(DATABASE)
@@ -19,9 +19,9 @@ def get_db():
     return conn
 
 
-# -----------------------------------------
-# CREATE TABLE
-# -----------------------------------------
+# =========================================================
+# CREATE / UPDATE DATABASE
+# =========================================================
 
 def create_table():
 
@@ -30,6 +30,7 @@ def create_table():
     conn.execute("""
         CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id TEXT,
             name TEXT NOT NULL,
             category TEXT,
             quantity INTEGER,
@@ -42,41 +43,36 @@ def create_table():
         )
     """)
 
-    conn.commit()
+    # Existing database ke liye missing columns automatically add honge
 
-    # Add missing columns safely
     columns = [
-        "supplier_location",
-        "delivery_location",
-        "delivery_date",
-        "delivery_time"
+        ("product_id", "TEXT"),
+        ("supplier_location", "TEXT"),
+        ("delivery_location", "TEXT"),
+        ("delivery_date", "TEXT"),
+        ("delivery_time", "TEXT")
     ]
 
     existing_columns = [
         row["name"]
-        for row in conn.execute(
-            "PRAGMA table_info(products)"
-        ).fetchall()
+        for row in conn.execute("PRAGMA table_info(products)").fetchall()
     ]
 
-    for column in columns:
+    for column_name, column_type in columns:
 
-        if column not in existing_columns:
+        if column_name not in existing_columns:
 
             conn.execute(
-                f"ALTER TABLE products ADD COLUMN {column} TEXT"
+                f"ALTER TABLE products ADD COLUMN {column_name} {column_type}"
             )
 
     conn.commit()
     conn.close()
 
 
-create_table()
-
-
-# -----------------------------------------
-# CLEAN LOCATION NAME
-# -----------------------------------------
+# =========================================================
+# LOCATION CLEANING
+# =========================================================
 
 def clean_location(location):
 
@@ -85,69 +81,84 @@ def clean_location(location):
 
     location = location.strip()
 
-    # Common spelling / short-name corrections
-    corrections = {
-        "kura": "Kurla, Mumbai, Maharashtra, India",
-        "kurla": "Kurla, Mumbai, Maharashtra, India",
+    location_lower = location.lower()
+
+    location_map = {
+
         "mumbai": "Mumbai, Maharashtra, India",
         "bombay": "Mumbai, Maharashtra, India",
+
+        "kurla": "Kurla, Mumbai, Maharashtra, India",
+        "kura": "Kurla, Mumbai, Maharashtra, India",
+
         "pune": "Pune, Maharashtra, India",
-        "surat": "Surat, Gujarat, India",
+
         "thane": "Thane, Maharashtra, India",
+
+        "navi mumbai": "Navi Mumbai, Maharashtra, India",
+
         "nashik": "Nashik, Maharashtra, India",
+
         "nagpur": "Nagpur, Maharashtra, India",
-        "delhi": "Delhi, India",
-        "new delhi": "New Delhi, India",
-        "bangalore": "Bengaluru, Karnataka, India",
-        "bengaluru": "Bengaluru, Karnataka, India",
-        "hyderabad": "Hyderabad, Telangana, India",
-        "chennai": "Chennai, Tamil Nadu, India",
+
+        "surat": "Surat, Gujarat, India",
+
         "ahmedabad": "Ahmedabad, Gujarat, India",
+
+        "delhi": "Delhi, India",
+
+        "new delhi": "New Delhi, Delhi, India",
+
+        "bangalore": "Bengaluru, Karnataka, India",
+
+        "bengaluru": "Bengaluru, Karnataka, India",
+
+        "hyderabad": "Hyderabad, Telangana, India",
+
+        "chennai": "Chennai, Tamil Nadu, India",
+
         "kolkata": "Kolkata, West Bengal, India",
+
         "jaipur": "Jaipur, Rajasthan, India",
-        "indore": "Indore, Madhya Pradesh, India",
-        "navi mumbai": "Navi Mumbai, Maharashtra, India"
+
+        "indore": "Indore, Madhya Pradesh, India"
     }
 
-    key = location.lower()
+    if location_lower in location_map:
 
-    if key in corrections:
-        return corrections[key]
+        return location_map[location_lower]
 
-    # If user already entered India,
-    # don't add India again
-    if "india" in key:
+    # Agar already India hai
+    if "india" in location_lower:
+
         return location
 
     return location + ", India"
 
 
-# -----------------------------------------
-# GET COORDINATES
-# -----------------------------------------
+# =========================================================
+# GET LOCATION COORDINATES
+# =========================================================
 
 def get_coordinates(location):
 
-    location = clean_location(location)
-
-    if not location:
-        return None
-
-    url = "https://nominatim.openstreetmap.org/search"
-
-    params = {
-        "q": location,
-        "format": "json",
-        "limit": 5,
-        "countrycodes": "in",
-        "addressdetails": 1
-    }
-
-    headers = {
-        "User-Agent": "InventoryManagementSystem/1.0"
-    }
-
     try:
+
+        cleaned = clean_location(location)
+
+        url = "https://nominatim.openstreetmap.org/search"
+
+        params = {
+            "q": cleaned,
+            "format": "json",
+            "limit": 5,
+            "countrycodes": "in",
+            "addressdetails": 1
+        }
+
+        headers = {
+            "User-Agent": "InventoryManagementSystem/1.0"
+        }
 
         response = requests.get(
             url,
@@ -156,71 +167,53 @@ def get_coordinates(location):
             timeout=10
         )
 
-        response.raise_for_status()
-
-        data = response.json()
-
-        if not data:
+        if response.status_code != 200:
             return None
 
-        # Make sure result belongs to India
-        for place in data:
+        results = response.json()
 
-            display_name = place.get(
-                "display_name",
-                ""
-            ).lower()
+        for result in results:
 
-            address = place.get(
-                "address",
-                {}
-            )
+            address = result.get("address", {})
 
-            country = address.get(
-                "country",
-                ""
-            ).lower()
+            country = address.get("country", "").lower()
 
-            if (
-                "india" in display_name
-                or country == "india"
-            ):
+            if country == "india":
 
                 return (
-                    float(place["lat"]),
-                    float(place["lon"])
+                    float(result["lat"]),
+                    float(result["lon"])
                 )
 
-        return None
+        # Fallback
+        if results:
+
+            return (
+                float(results[0]["lat"]),
+                float(results[0]["lon"])
+            )
 
     except Exception as e:
 
         print("Geocoding error:", e)
 
-        return None
+    return None
 
 
-# -----------------------------------------
+# =========================================================
 # HAVERSINE DISTANCE
-# -----------------------------------------
+# =========================================================
 
-def haversine_distance(
-    lat1,
-    lon1,
-    lat2,
-    lon2
-):
+def haversine_distance(lat1, lon1, lat2, lon2):
 
-    radius = 6371
+    R = 6371
 
     lat1 = math.radians(lat1)
-    lon1 = math.radians(lon1)
-
     lat2 = math.radians(lat2)
-    lon2 = math.radians(lon2)
 
     dlat = lat2 - lat1
-    dlon = lon2 - lon1
+
+    dlon = math.radians(lon2) - math.radians(lon1)
 
     a = (
         math.sin(dlat / 2) ** 2
@@ -235,132 +228,112 @@ def haversine_distance(
         math.sqrt(1 - a)
     )
 
-    return radius * c
+    return R * c
 
 
-# -----------------------------------------
+# =========================================================
 # CALCULATE DELIVERY ETA
-# -----------------------------------------
+# =========================================================
 
 def calculate_delivery_eta(
     supplier_location,
     delivery_location
 ):
 
-    supplier_coordinates = get_coordinates(
-        supplier_location
-    )
+    origin = get_coordinates(supplier_location)
 
-    delivery_coordinates = get_coordinates(
-        delivery_location
-    )
+    destination = get_coordinates(delivery_location)
 
-    if (
-        not supplier_coordinates
-        or not delivery_coordinates
-    ):
+    if not origin or not destination:
 
         return None, None
 
+    origin_lat, origin_lon = origin
 
-    lat1, lon1 = supplier_coordinates
-    lat2, lon2 = delivery_coordinates
+    destination_lat, destination_lon = destination
 
-
-    # -----------------------------------------
-    # ROUTE USING OSRM
-    # -----------------------------------------
-
-    route_url = (
-        "https://router.project-osrm.org/"
-        "route/v1/driving/"
-        f"{lon1},{lat1};{lon2},{lat2}"
-    )
-
-    params = {
-        "overview": "false"
-    }
+    # -----------------------------------------------------
+    # Try OSRM driving route
+    # -----------------------------------------------------
 
     try:
+
+        route_url = (
+            "https://router.project-osrm.org/route/v1/driving/"
+            f"{origin_lon},{origin_lat};"
+            f"{destination_lon},{destination_lat}"
+        )
+
+        params = {
+            "overview": "false"
+        }
 
         response = requests.get(
             route_url,
             params=params,
-            timeout=15
+            timeout=10
         )
 
-        response.raise_for_status()
+        if response.status_code == 200:
 
-        data = response.json()
+            data = response.json()
 
-        if (
-            data.get("routes")
-            and len(data["routes"]) > 0
-        ):
+            routes = data.get("routes", [])
 
-            route = data["routes"][0]
+            if routes:
 
-            duration_seconds = route["duration"]
+                duration_seconds = routes[0]["duration"]
 
-            duration_minutes = int(
-                duration_seconds / 60
-            )
+                distance_meters = routes[0]["distance"]
 
-        else:
+                distance_km = distance_meters / 1000
 
-            raise Exception(
-                "Route not found"
-            )
+                duration = timedelta(
+                    seconds=duration_seconds
+                )
+
+                arrival = datetime.now() + duration
+
+                return (
+                    arrival.strftime("%Y-%m-%d"),
+                    arrival.strftime("%I:%M %p")
+                )
 
     except Exception as e:
 
-        print("OSRM error:", e)
+        print("OSRM route error:", e)
 
-        # -----------------------------------------
-        # FALLBACK CALCULATION
-        # -----------------------------------------
+    # -----------------------------------------------------
+    # Fallback calculation
+    # -----------------------------------------------------
 
-        distance = haversine_distance(
-            lat1,
-            lon1,
-            lat2,
-            lon2
-        )
-
-        # Average speed for fallback
-        average_speed = 40
-
-        duration_minutes = int(
-            (distance / average_speed) * 60
-        )
-
-
-    # -----------------------------------------
-    # ETA
-    # -----------------------------------------
-
-    arrival_time = (
-        datetime.now()
-        +
-        timedelta(
-            minutes=duration_minutes
-        )
+    distance_km = haversine_distance(
+        origin_lat,
+        origin_lon,
+        destination_lat,
+        destination_lon
     )
 
-    delivery_date = arrival_time.strftime(
-        "%Y-%m-%d"
+    # Average speed = 40 km/hour
+    average_speed = 40
+
+    travel_hours = distance_km / average_speed
+
+    travel_seconds = travel_hours * 3600
+
+    arrival = datetime.now() + timedelta(
+        seconds=travel_seconds
     )
 
-    delivery_time = arrival_time.strftime(
-        "%I:%M %p"
+    return (
+        arrival.strftime("%Y-%m-%d"),
+        arrival.strftime("%I:%M %p")
     )
 
-    return delivery_date, delivery_time
 
-
-# -----------------------------------------
-# HOME PAGE
-# -----------------------------------------
+# =========================================================
+# HOME
+# =========================================================
 
 @app.route("/")
 def index():
@@ -379,22 +352,27 @@ def index():
     )
 
 
-# -----------------------------------------
+# =========================================================
 # ADD PRODUCT
-# -----------------------------------------
+# =========================================================
 
 @app.route("/add", methods=["POST"])
 def add_product():
 
+    product_id = request.form.get(
+        "product_id",
+        ""
+    ).strip()
+
     name = request.form.get(
         "name",
         ""
-    )
+    ).strip()
 
     category = request.form.get(
         "category",
         ""
-    )
+    ).strip()
 
     quantity = request.form.get(
         "quantity",
@@ -409,35 +387,38 @@ def add_product():
     supplier = request.form.get(
         "supplier",
         ""
-    )
+    ).strip()
 
     supplier_location = request.form.get(
         "supplier_location",
         ""
-    )
+    ).strip()
 
     delivery_location = request.form.get(
         "delivery_location",
         ""
-    )
+    ).strip()
 
+    # -----------------------------------------------------
+    # Automatic ETA
+    # -----------------------------------------------------
 
-    # -----------------------------------------
-    # AUTOMATIC ETA
-    # -----------------------------------------
+    delivery_date = None
+    delivery_time = None
 
-    delivery_date, delivery_time = (
-        calculate_delivery_eta(
+    if supplier_location and delivery_location:
+
+        delivery_date, delivery_time = calculate_delivery_eta(
             supplier_location,
             delivery_location
         )
-    )
-
 
     conn = get_db()
 
     conn.execute("""
-        INSERT INTO products (
+        INSERT INTO products
+        (
+            product_id,
             name,
             category,
             quantity,
@@ -448,8 +429,9 @@ def add_product():
             delivery_date,
             delivery_time
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
+        product_id,
         name,
         category,
         quantity,
@@ -462,14 +444,15 @@ def add_product():
     ))
 
     conn.commit()
+
     conn.close()
 
     return redirect("/")
 
 
-# -----------------------------------------
+# =========================================================
 # DELETE PRODUCT
-# -----------------------------------------
+# =========================================================
 
 @app.route("/delete/<int:id>")
 def delete_product(id):
@@ -482,14 +465,15 @@ def delete_product(id):
     )
 
     conn.commit()
+
     conn.close()
 
     return redirect("/")
 
 
-# -----------------------------------------
+# =========================================================
 # EDIT PRODUCT
-# -----------------------------------------
+# =========================================================
 
 @app.route("/edit/<int:id>")
 def edit_product(id):
@@ -503,28 +487,37 @@ def edit_product(id):
 
     conn.close()
 
+    if product is None:
+
+        return "Product not found", 404
+
     return render_template(
         "edit_product.html",
         product=product
     )
 
 
-# -----------------------------------------
+# =========================================================
 # UPDATE PRODUCT
-# -----------------------------------------
+# =========================================================
 
 @app.route("/update/<int:id>", methods=["POST"])
 def update_product(id):
 
+    product_id = request.form.get(
+        "product_id",
+        ""
+    ).strip()
+
     name = request.form.get(
         "name",
         ""
-    )
+    ).strip()
 
     category = request.form.get(
         "category",
         ""
-    )
+    ).strip()
 
     quantity = request.form.get(
         "quantity",
@@ -539,36 +532,36 @@ def update_product(id):
     supplier = request.form.get(
         "supplier",
         ""
-    )
+    ).strip()
 
     supplier_location = request.form.get(
         "supplier_location",
         ""
-    )
+    ).strip()
 
     delivery_location = request.form.get(
         "delivery_location",
         ""
-    )
+    ).strip()
 
+    # Automatic ETA again
+    delivery_date = None
+    delivery_time = None
 
-    # -----------------------------------------
-    # RECALCULATE ETA
-    # -----------------------------------------
+    if supplier_location and delivery_location:
 
-    delivery_date, delivery_time = (
-        calculate_delivery_eta(
+        delivery_date, delivery_time = calculate_delivery_eta(
             supplier_location,
             delivery_location
         )
-    )
-
 
     conn = get_db()
 
     conn.execute("""
         UPDATE products
+
         SET
+            product_id = ?,
             name = ?,
             category = ?,
             quantity = ?,
@@ -578,8 +571,10 @@ def update_product(id):
             delivery_location = ?,
             delivery_date = ?,
             delivery_time = ?
+
         WHERE id = ?
     """, (
+        product_id,
         name,
         category,
         quantity,
@@ -593,16 +588,17 @@ def update_product(id):
     ))
 
     conn.commit()
+
     conn.close()
 
     return redirect("/")
 
 
-# -----------------------------------------
+# =========================================================
 # STOCK OUT
-# -----------------------------------------
+# =========================================================
 
-@app.route("/stock_out/<int:id>", methods=["GET", "POST"])
+@app.route("/stock-out/<int:id>", methods=["GET", "POST"])
 def stock_out(id):
 
     conn = get_db()
@@ -612,28 +608,40 @@ def stock_out(id):
         (id,)
     ).fetchone()
 
+    if product is None:
+
+        conn.close()
+
+        return "Product not found", 404
+
     if request.method == "POST":
 
-        quantity_out = int(
+        quantity = int(
             request.form.get(
                 "quantity",
                 0
             )
         )
 
-        new_quantity = max(
-            0,
-            product["quantity"] - quantity_out
-        )
+        current_quantity = product["quantity"]
 
-        conn.execute("""
+        new_quantity = current_quantity - quantity
+
+        if new_quantity < 0:
+
+            new_quantity = 0
+
+        conn.execute(
+            """
             UPDATE products
             SET quantity = ?
             WHERE id = ?
-        """, (
-            new_quantity,
-            id
-        ))
+            """,
+            (
+                new_quantity,
+                id
+            )
+        )
 
         conn.commit()
 
@@ -649,36 +657,37 @@ def stock_out(id):
     )
 
 
-# -----------------------------------------
+# =========================================================
 # SEARCH
-# -----------------------------------------
+# =========================================================
 
 @app.route("/search")
 def search():
 
-    query = request.args.get(
-        "query",
+    keyword = request.args.get(
+        "keyword",
         ""
-    )
+    ).strip()
 
     conn = get_db()
 
-    products = conn.execute("""
+    products = conn.execute(
+        """
         SELECT * FROM products
         WHERE
-            name LIKE ?
+            product_id LIKE ?
+            OR name LIKE ?
             OR category LIKE ?
             OR supplier LIKE ?
-            OR supplier_location LIKE ?
-            OR delivery_location LIKE ?
         ORDER BY id DESC
-    """, (
-        "%" + query + "%",
-        "%" + query + "%",
-        "%" + query + "%",
-        "%" + query + "%",
-        "%" + query + "%"
-    )).fetchall()
+        """,
+        (
+            f"%{keyword}%",
+            f"%{keyword}%",
+            f"%{keyword}%",
+            f"%{keyword}%"
+        )
+    ).fetchall()
 
     conn.close()
 
@@ -688,20 +697,22 @@ def search():
     )
 
 
-# -----------------------------------------
+# =========================================================
 # LOW STOCK
-# -----------------------------------------
+# =========================================================
 
-@app.route("/low_stock")
+@app.route("/low-stock")
 def low_stock():
 
     conn = get_db()
 
-    products = conn.execute("""
+    products = conn.execute(
+        """
         SELECT * FROM products
         WHERE quantity <= 5
         ORDER BY quantity ASC
-    """).fetchall()
+        """
+    ).fetchall()
 
     conn.close()
 
@@ -711,9 +722,9 @@ def low_stock():
     )
 
 
-# -----------------------------------------
-# MAP
-# -----------------------------------------
+# =========================================================
+# MAP / ROUTE
+# =========================================================
 
 @app.route("/map/<int:id>")
 def product_map(id):
@@ -721,11 +732,18 @@ def product_map(id):
     conn = get_db()
 
     product = conn.execute(
-        "SELECT * FROM products WHERE id = ?",
+        """
+        SELECT * FROM products
+        WHERE id = ?
+        """,
         (id,)
     ).fetchone()
 
     conn.close()
+
+    if product is None:
+
+        return "Product not found", 404
 
     return render_template(
         "map.html",
@@ -733,9 +751,9 @@ def product_map(id):
     )
 
 
-# -----------------------------------------
+# =========================================================
 # BILL
-# -----------------------------------------
+# =========================================================
 
 @app.route("/bill/<int:id>")
 def bill(id):
@@ -743,11 +761,18 @@ def bill(id):
     conn = get_db()
 
     product = conn.execute(
-        "SELECT * FROM products WHERE id = ?",
+        """
+        SELECT * FROM products
+        WHERE id = ?
+        """,
         (id,)
     ).fetchone()
 
     conn.close()
+
+    if product is None:
+
+        return "Product not found", 404
 
     return render_template(
         "bill.html",
@@ -755,14 +780,15 @@ def bill(id):
     )
 
 
-# -----------------------------------------
-# RUN APP
-# -----------------------------------------
+# =========================================================
+# START APPLICATION
+# =========================================================
+
+create_table()
+
 
 if __name__ == "__main__":
 
     app.run(
-        host="0.0.0.0",
-        port=5000,
         debug=True
     )
