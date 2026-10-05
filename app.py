@@ -58,6 +58,8 @@ def add_product():
     quantity = request.form["quantity"]
     price = request.form["price"]
     supplier = request.form["supplier"]
+    supplier_location = request.form["supplier_location"]
+    delivery_location = request.form["delivery_location"]
 
     quantity = int(quantity)
     price = float(price)
