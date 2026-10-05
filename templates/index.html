@@ -15,7 +15,6 @@
 
 </head>
 
-
 <body>
 
 <div class="container">
@@ -27,7 +26,7 @@
     </p>
 
 
-    <!-- ================= ADD PRODUCT ================= -->
+    <!-- ADD PRODUCT -->
 
     <div class="card">
 
@@ -86,7 +85,9 @@
                    placeholder="Supplier Name">
 
 
-            <label>📍 Import / Supplier Location</label>
+            <label>
+                📍 Import / Supplier Location
+            </label>
 
             <input type="text"
                    name="supplier_location"
@@ -94,7 +95,9 @@
                    required>
 
 
-            <label>📍 Export / Delivery Location</label>
+            <label>
+                📍 Export / Delivery Location
+            </label>
 
             <input type="text"
                    name="delivery_location"
@@ -111,9 +114,7 @@
 
 
             <button type="submit">
-
                 ➕ Add Product
-
             </button>
 
         </form>
@@ -121,8 +122,7 @@
     </div>
 
 
-
-    <!-- ================= SEARCH ================= -->
+    <!-- SEARCH -->
 
     <div class="card">
 
@@ -137,9 +137,7 @@
                    placeholder="Search Product ID, Name, Category or Supplier">
 
             <button type="submit">
-
                 🔍 Search
-
             </button>
 
         </form>
@@ -148,16 +146,11 @@
         <div class="quick-links">
 
             <a href="/">
-
                 🏠 Show All Products
-
             </a>
 
-
             <a href="/low-stock">
-
                 ⚠️ Low Stock Products
-
             </a>
 
         </div>
@@ -165,8 +158,7 @@
     </div>
 
 
-
-    <!-- ================= PRODUCTS ================= -->
+    <!-- PRODUCTS -->
 
     <div class="card">
 
@@ -184,27 +176,16 @@
                     <tr>
 
                         <th>Database ID</th>
-
                         <th>Product ID</th>
-
                         <th>Name</th>
-
                         <th>Category</th>
-
                         <th>Quantity</th>
-
                         <th>Price</th>
-
                         <th>Supplier</th>
-
                         <th>Import Location</th>
-
-                        <th>Export / Delivery Location</th>
-
+                        <th>Delivery Location</th>
                         <th>Estimated Delivery</th>
-
                         <th>Route</th>
-
                         <th>Action</th>
 
                     </tr>
@@ -214,22 +195,14 @@
 
                 <tbody>
 
-
                 {% for product in products %}
 
                 <tr>
 
-
-                    <!-- Database ID -->
-
                     <td>
-
                         {{ product['id'] }}
-
                     </td>
 
-
-                    <!-- Product ID -->
 
                     <td>
 
@@ -248,25 +221,15 @@
                     </td>
 
 
-                    <!-- Product Name -->
-
                     <td>
-
                         {{ product['name'] }}
-
                     </td>
 
-
-                    <!-- Category -->
 
                     <td>
-
                         {{ product['category'] or '-' }}
-
                     </td>
 
-
-                    <!-- Quantity -->
 
                     <td>
 
@@ -274,9 +237,7 @@
                               and product['quantity'] <= 5 %}
 
                             <span class="low-stock">
-
                                 {{ product['quantity'] }}
-
                             </span>
 
                         {% else %}
@@ -288,25 +249,15 @@
                     </td>
 
 
-                    <!-- Price -->
-
                     <td>
-
                         ₹{{ "%.2f"|format(product['price'] or 0) }}
-
                     </td>
 
-
-                    <!-- Supplier -->
 
                     <td>
-
                         {{ product['supplier'] or '-' }}
-
                     </td>
 
-
-                    <!-- Import Location -->
 
                     <td>
 
@@ -317,17 +268,13 @@
                         {% else %}
 
                             <span class="not-available">
-
                                 Not Available
-
                             </span>
 
                         {% endif %}
 
                     </td>
 
-
-                    <!-- Delivery Location -->
 
                     <td>
 
@@ -338,9 +285,7 @@
                         {% else %}
 
                             <span class="not-available">
-
                                 Not Available
-
                             </span>
 
                         {% endif %}
@@ -348,20 +293,32 @@
                     </td>
 
 
-                    <!-- Automatic ETA -->
+                    <!-- DELIVERY DATE -->
 
                     <td>
 
-                        {% if product['delivery_date']
-                              and product['delivery_time'] %}
+                        {% if product['delivery_date'] %}
 
                             <div class="eta">
 
-                                📅 {{ product['delivery_date'] }}
+                                📅
+                                <strong>
+                                    {{ product['delivery_date'] }}
+                                </strong>
 
                                 <br>
 
-                                🕐 {{ product['delivery_time'] }}
+                                🕐
+                                <strong>
+                                    {{ product['delivery_time'] or '-' }}
+                                </strong>
+
+                                <br>
+
+                                🚚
+                                <span>
+                                    Estimated Arrival
+                                </span>
 
                             </div>
 
@@ -369,7 +326,7 @@
 
                             <span class="calculating">
 
-                                ⏳ Calculating...
+                                ⚠️ ETA Not Available
 
                             </span>
 
@@ -378,7 +335,7 @@
                     </td>
 
 
-                    <!-- MAP / ROUTE -->
+                    <!-- ROUTE -->
 
                     <td>
 
@@ -395,9 +352,7 @@
                         {% else %}
 
                             <span class="not-available">
-
                                 Not Available
-
                             </span>
 
                         {% endif %}
@@ -410,7 +365,6 @@
                     <td>
 
                         <div class="actions">
-
 
                             <a href="/edit/{{ product['id'] }}"
                                class="edit-button">
@@ -448,11 +402,9 @@
 
                     </td>
 
-
                 </tr>
 
                 {% endfor %}
-
 
                 </tbody>
 
@@ -463,18 +415,17 @@
 
         {% else %}
 
-            <div class="no-products">
+        <div class="no-products">
 
-                📦 No products found.
+            📦 No products found.
 
-            </div>
+        </div>
 
         {% endif %}
 
     </div>
 
 </div>
-
 
 </body>
 
