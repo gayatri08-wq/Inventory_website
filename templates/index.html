@@ -1,7 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>Inventory Management System</title>
 
@@ -13,308 +18,462 @@
 
 <body>
 
+<div class="container">
+
     <h1>📦 Inventory Management System</h1>
 
+    <p class="subtitle">
+        Manage Products, Stock, Locations and Delivery ETA
+    </p>
 
-    <h2>➕ Add Product</h2>
 
+    <!-- ================= ADD PRODUCT ================= -->
 
-    <form action="/add" method="POST">
+    <div class="card">
 
+        <h2>➕ Add Product</h2>
 
-        <input type="text"
-               name="product_id"
-               placeholder="Product ID"
-               required>
+        <form action="/add"
+              method="POST"
+              class="product-form">
 
+            <label>Product ID</label>
 
-        <input type="text"
-               name="name"
-               placeholder="Product Name"
-               required>
+            <input type="text"
+                   name="product_id"
+                   placeholder="Example: P001"
+                   required>
 
 
-        <input type="text"
-               name="category"
-               placeholder="Category">
+            <label>Product Name</label>
 
+            <input type="text"
+                   name="name"
+                   placeholder="Product Name"
+                   required>
 
-        <input type="number"
-               name="quantity"
-               placeholder="Quantity"
-               required>
 
+            <label>Category</label>
 
-        <input type="number"
-               step="0.01"
-               name="price"
-               placeholder="Price"
-               required>
+            <input type="text"
+                   name="category"
+                   placeholder="Category">
 
 
-        <input type="text"
-               name="supplier"
-               placeholder="Supplier">
+            <label>Quantity</label>
 
+            <input type="number"
+                   name="quantity"
+                   min="0"
+                   placeholder="Quantity"
+                   required>
 
-        <!-- Supplier / Import Location -->
 
-        <input type="text"
-               name="supplier_location"
-               placeholder="📍 Import Location (e.g. Mumbai)"
-               required>
+            <label>Price</label>
 
+            <input type="number"
+                   name="price"
+                   step="0.01"
+                   min="0"
+                   placeholder="Price"
+                   required>
 
-        <!-- Delivery / Export Location -->
 
-        <input type="text"
-               name="delivery_location"
-               placeholder="📍 Export / Delivery Location (e.g. Pune)"
-               required>
+            <label>Supplier</label>
 
+            <input type="text"
+                   name="supplier"
+                   placeholder="Supplier Name">
 
-        <button type="submit">
-            Add Product
-        </button>
 
+            <label>📍 Import / Supplier Location</label>
 
-    </form>
+            <input type="text"
+                   name="supplier_location"
+                   placeholder="Example: Mumbai"
+                   required>
 
 
-    <h2>📋 Products</h2>
+            <label>📍 Export / Delivery Location</label>
 
+            <input type="text"
+                   name="delivery_location"
+                   placeholder="Example: Pune"
+                   required>
 
-    <form action="/search" method="GET">
 
+            <p class="info">
 
-        <input type="text"
-               name="keyword"
-               placeholder="Search Product">
+                🚚 Delivery date and time will be
+                calculated automatically.
 
+            </p>
 
-        <button type="submit">
-            🔍 Search
-        </button>
 
+            <button type="submit">
 
-    </form>
+                ➕ Add Product
 
+            </button>
 
-    <br>
+        </form>
 
+    </div>
 
-    <a href="/">
-        Show All Products
-    </a>
 
 
-    <br><br>
+    <!-- ================= SEARCH ================= -->
 
+    <div class="card">
 
-    <a href="/low-stock">
-        ⚠️ Low Stock Products
-    </a>
+        <h2>🔍 Search Products</h2>
 
+        <form action="/search"
+              method="GET"
+              class="search-form">
 
-    <br><br>
+            <input type="text"
+                   name="keyword"
+                   placeholder="Search Product ID, Name, Category or Supplier">
 
+            <button type="submit">
 
-    <table>
+                🔍 Search
 
+            </button>
 
-        <tr>
+        </form>
 
-            <th>ID</th>
 
-            <th>Name</th>
+        <div class="quick-links">
 
-            <th>Category</th>
+            <a href="/">
 
-            <th>Quantity</th>
+                🏠 Show All Products
 
-            <th>Price</th>
+            </a>
 
-            <th>Supplier</th>
 
-            <th>Import Location</th>
+            <a href="/low-stock">
 
-            <th>Export / Delivery Location</th>
+                ⚠️ Low Stock Products
 
-            <th>Estimated Delivery</th>
+            </a>
 
-            <th>Route</th>
+        </div>
 
-            <th>Action</th>
+    </div>
 
-        </tr>
 
 
-        {% for product in products %}
+    <!-- ================= PRODUCTS ================= -->
 
+    <div class="card">
 
-        <tr>
+        <h2>📋 Products</h2>
 
 
-            <td>
-                {{ product['id'] }}
-            </td>
+        {% if products %}
 
+        <div class="table-container">
 
-            <td>
-                {{ product['name'] }}
-            </td>
+            <table>
 
+                <thead>
 
-            <td>
-                {{ product['category'] }}
-            </td>
+                    <tr>
 
+                        <th>Database ID</th>
 
-            <td>
-                {{ product['quantity'] }}
-            </td>
+                        <th>Product ID</th>
 
+                        <th>Name</th>
 
-            <td>
-                ₹{{ product['price'] }}
-            </td>
+                        <th>Category</th>
 
+                        <th>Quantity</th>
 
-            <td>
-                {{ product['supplier'] }}
-            </td>
+                        <th>Price</th>
 
+                        <th>Supplier</th>
 
-            <!-- Import Location -->
+                        <th>Import Location</th>
 
-            <td>
+                        <th>Export / Delivery Location</th>
 
-                {% if product['supplier_location'] %}
+                        <th>Estimated Delivery</th>
 
-                    📍 {{ product['supplier_location'] }}
+                        <th>Route</th>
 
-                {% else %}
+                        <th>Action</th>
 
-                    Not Available
+                    </tr>
 
-                {% endif %}
+                </thead>
 
-            </td>
 
+                <tbody>
 
-            <!-- Export / Delivery Location -->
 
-            <td>
+                {% for product in products %}
 
-                {% if product['delivery_location'] %}
+                <tr>
 
-                    📍 {{ product['delivery_location'] }}
 
-                {% else %}
+                    <!-- Database ID -->
 
-                    Not Available
+                    <td>
 
-                {% endif %}
+                        {{ product['id'] }}
 
-            </td>
+                    </td>
 
 
-            <!-- Automatic Estimated Delivery -->
+                    <!-- Product ID -->
 
-            <td>
+                    <td>
 
-                {% if product['delivery_date'] and product['delivery_time'] %}
+                        {% if product['product_id'] %}
 
-                    📅 {{ product['delivery_date'] }}<br>
+                            <strong>
+                                {{ product['product_id'] }}
+                            </strong>
 
-                    🕐 {{ product['delivery_time'] }}
+                        {% else %}
 
-                {% else %}
+                            -
 
-                    ⏳ Calculating...
+                        {% endif %}
 
-                {% endif %}
+                    </td>
 
-            </td>
 
+                    <!-- Product Name -->
 
-            <!-- Map -->
+                    <td>
 
-            <td>
+                        {{ product['name'] }}
 
-                {% if product['supplier_location']
-                      and product['delivery_location'] %}
+                    </td>
 
 
-                    <a href="/map/{{ product['id'] }}">
+                    <!-- Category -->
 
-                        🗺️ View Location & Route
+                    <td>
 
-                    </a>
+                        {{ product['category'] or '-' }}
 
+                    </td>
 
-                {% else %}
 
-                    Not Available
+                    <!-- Quantity -->
 
-                {% endif %}
+                    <td>
 
-            </td>
+                        {% if product['quantity'] is not none
+                              and product['quantity'] <= 5 %}
 
+                            <span class="low-stock">
 
-            <!-- Actions -->
+                                {{ product['quantity'] }}
 
-            <td>
+                            </span>
 
+                        {% else %}
 
-                <a href="/delete/{{ product['id'] }}"
-                   onclick="return confirm('Delete this product?')">
+                            {{ product['quantity'] }}
 
-                    Delete
+                        {% endif %}
 
-                </a>
+                    </td>
 
 
-                |
+                    <!-- Price -->
 
+                    <td>
 
-                <a href="/edit/{{ product['id'] }}">
+                        ₹{{ "%.2f"|format(product['price'] or 0) }}
 
-                    Edit
+                    </td>
 
-                </a>
 
+                    <!-- Supplier -->
 
-                |
+                    <td>
 
+                        {{ product['supplier'] or '-' }}
 
-                <a href="/stock-out/{{ product['id'] }}">
+                    </td>
 
-                    Stock Out
 
-                </a>
+                    <!-- Import Location -->
 
+                    <td>
 
-                |
+                        {% if product['supplier_location'] %}
 
+                            📍 {{ product['supplier_location'] }}
 
-                <a href="/bill/{{ product['id'] }}">
+                        {% else %}
 
-                    Bill
+                            <span class="not-available">
 
-                </a>
+                                Not Available
 
+                            </span>
 
-            </td>
+                        {% endif %}
 
+                    </td>
 
-        </tr>
 
+                    <!-- Delivery Location -->
 
-        {% endfor %}
+                    <td>
 
+                        {% if product['delivery_location'] %}
 
-    </table>
+                            📍 {{ product['delivery_location'] }}
+
+                        {% else %}
+
+                            <span class="not-available">
+
+                                Not Available
+
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <!-- Automatic ETA -->
+
+                    <td>
+
+                        {% if product['delivery_date']
+                              and product['delivery_time'] %}
+
+                            <div class="eta">
+
+                                📅 {{ product['delivery_date'] }}
+
+                                <br>
+
+                                🕐 {{ product['delivery_time'] }}
+
+                            </div>
+
+                        {% else %}
+
+                            <span class="calculating">
+
+                                ⏳ Calculating...
+
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <!-- MAP / ROUTE -->
+
+                    <td>
+
+                        {% if product['supplier_location']
+                              and product['delivery_location'] %}
+
+                            <a href="/map/{{ product['id'] }}"
+                               class="route-button">
+
+                                🗺️ View Route
+
+                            </a>
+
+                        {% else %}
+
+                            <span class="not-available">
+
+                                Not Available
+
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <!-- ACTIONS -->
+
+                    <td>
+
+                        <div class="actions">
+
+
+                            <a href="/edit/{{ product['id'] }}"
+                               class="edit-button">
+
+                                ✏️ Edit
+
+                            </a>
+
+
+                            <a href="/stock-out/{{ product['id'] }}"
+                               class="stock-button">
+
+                                📦 Stock Out
+
+                            </a>
+
+
+                            <a href="/bill/{{ product['id'] }}"
+                               class="bill-button">
+
+                                🧾 Bill
+
+                            </a>
+
+
+                            <a href="/delete/{{ product['id'] }}"
+                               class="delete-button"
+                               onclick="return confirm('Are you sure you want to delete this product?')">
+
+                                🗑️ Delete
+
+                            </a>
+
+                        </div>
+
+                    </td>
+
+
+                </tr>
+
+                {% endfor %}
+
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        {% else %}
+
+            <div class="no-products">
+
+                📦 No products found.
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
 
 
 </body>
