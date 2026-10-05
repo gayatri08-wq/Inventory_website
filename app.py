@@ -28,7 +28,9 @@ def create_table():
             price REAL NOT NULL,
             supplier TEXT,
             supplier_location TEXT,
-            delivery_location TEXT
+            delivery_location TEXT,
+            delivery_date TEXT,
+            delivery_time TEXT
         )
     """)
 
@@ -42,16 +44,26 @@ def create_table():
 
     # Add Supplier Location if missing
     if "supplier_location" not in columns:
-
         conn.execute(
             "ALTER TABLE products ADD COLUMN supplier_location TEXT"
         )
 
     # Add Delivery Location if missing
     if "delivery_location" not in columns:
-
         conn.execute(
             "ALTER TABLE products ADD COLUMN delivery_location TEXT"
+        )
+
+    # Add Delivery Date if missing
+    if "delivery_date" not in columns:
+        conn.execute(
+            "ALTER TABLE products ADD COLUMN delivery_date TEXT"
+        )
+
+    # Add Delivery Time if missing
+    if "delivery_time" not in columns:
+        conn.execute(
+            "ALTER TABLE products ADD COLUMN delivery_time TEXT"
         )
 
     conn.commit()
@@ -91,6 +103,10 @@ def add_product():
     supplier_location = request.form["supplier_location"]
     delivery_location = request.form["delivery_location"]
 
+    # New delivery details
+    delivery_date = request.form["delivery_date"]
+    delivery_time = request.form["delivery_time"]
+
     quantity = int(quantity)
     price = float(price)
 
@@ -108,9 +124,11 @@ def add_product():
                 price,
                 supplier,
                 supplier_location,
-                delivery_location
+                delivery_location,
+                delivery_date,
+                delivery_time
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             product_id,
             name,
@@ -119,7 +137,9 @@ def add_product():
             price,
             supplier,
             supplier_location,
-            delivery_location
+            delivery_location,
+            delivery_date,
+            delivery_time
         ))
 
         conn.commit()
@@ -188,6 +208,10 @@ def update_product():
     supplier_location = request.form["supplier_location"]
     delivery_location = request.form["delivery_location"]
 
+    # New delivery details
+    delivery_date = request.form["delivery_date"]
+    delivery_time = request.form["delivery_time"]
+
     conn = get_db()
 
     conn.execute("""
@@ -199,7 +223,9 @@ def update_product():
             price = ?,
             supplier = ?,
             supplier_location = ?,
-            delivery_location = ?
+            delivery_location = ?,
+            delivery_date = ?,
+            delivery_time = ?
         WHERE id = ?
     """, (
         name,
@@ -209,6 +235,8 @@ def update_product():
         supplier,
         supplier_location,
         delivery_location,
+        delivery_date,
+        delivery_time,
         product_id
     ))
 
@@ -296,8 +324,12 @@ def search():
         OR supplier LIKE ?
         OR supplier_location LIKE ?
         OR delivery_location LIKE ?
+        OR delivery_date LIKE ?
+        OR delivery_time LIKE ?
         ORDER BY id
     """, (
+        "%" + keyword + "%",
+        "%" + keyword + "%",
         "%" + keyword + "%",
         "%" + keyword + "%",
         "%" + keyword + "%",
