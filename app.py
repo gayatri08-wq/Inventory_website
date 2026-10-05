@@ -1,4 +1,3 @@
-```python
 from flask import Flask, render_template, request, redirect
 import sqlite3
 from datetime import datetime, timedelta
@@ -989,4 +988,3 @@ if __name__ == "__main__":
 
         port=5000
     )
-```
