@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Register - Inventory Management</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+
+            font-family: Arial, sans-serif;
+
+            background: #f2f4f7;
+
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .register-box {
+            width: 380px;
+
+            background: white;
+
+            padding: 35px;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 5px 20px rgba(0, 0, 0, 0.15);
+
+            text-align: center;
+        }
+
+        .register-box h1 {
+            margin: 0 0 10px 0;
+
+            color: #222;
+
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+
+            margin-bottom: 25px;
+
+            font-size: 15px;
+        }
+
+        .error {
+            background: #ffe5e5;
+
+            color: #d00000;
+
+            padding: 10px;
+
+            border-radius: 6px;
+
+            margin-bottom: 15px;
+
+            font-size: 14px;
+        }
+
+        .input-group {
+            text-align: left;
+
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+
+            margin-bottom: 6px;
+
+            font-size: 14px;
+
+            font-weight: bold;
+
+            color: #333;
+        }
+
+        .input-group input {
+            width: 100%;
+
+            padding: 12px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 6px;
+
+            font-size: 15px;
+
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: #007bff;
+        }
+
+        .register-button {
+            width: 100%;
+
+            padding: 12px;
+
+            margin-top: 8px;
+
+            background: #007bff;
+
+            color: white;
+
+            border: none;
+
+            border-radius: 6px;
+
+            font-size: 16px;
+
+            cursor: pointer;
+        }
+
+        .register-button:hover {
+            background: #0056b3;
+        }
+
+        .login-link {
+            margin-top: 20px;
+
+            font-size: 14px;
+
+            color: #666;
+        }
+
+        .login-link a {
+            color: #007bff;
+
+            text-decoration: none;
+
+            font-weight: bold;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="register-box">
+
+        <h1>Inventory Management</h1>
+
+        <div class="subtitle">
+            Create your account
+        </div>
+
+        {% if error %}
+
+            <div class="error">
+                {{ error }}
+            </div>
+
+        {% endif %}
+
+        <form method="POST" action="/register">
+
+            <div class="input-group">
+
+                <label for="username">
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Enter username"
+                    required
+                >
+
+            </div>
+
+            <div class="input-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter password"
+                    required
+                >
+
+            </div>
+
+            <div class="input-group">
+
+                <label for="confirm_password">
+                    Confirm Password
+                </label>
+
+                <input
+                    type="password"
+                    id="confirm_password"
+                    name="confirm_password"
+                    placeholder="Re-enter password"
+                    required
+                >
+
+            </div>
+
+            <button
+                type="submit"
+                class="register-button"
+            >
+                Register
+            </button>
+
+        </form>
+
+        <div class="login-link">
+
+            Already have an account?
+
+            <a href="/login">
+                Login
+            </a>
+
+        </div>
+
+    </div>
+
+</body>
+</html>
