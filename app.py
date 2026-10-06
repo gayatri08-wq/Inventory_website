@@ -4,913 +4,790 @@ from datetime import datetime, timedelta
 import math
 import requests
 
-app = Flask(**name**)
-
-# Secret key for login session
+app = Flask(__name__)
 
 app.secret_key = "inventory_management_secret_key"
 
 DATABASE = "inventory.db"
 
+
 # =========================================================
-
 # DATABASE CONNECTION
-
 # =========================================================
 
 def get_db():
-conn = sqlite3.connect(DATABASE)
-conn.row_factory = sqlite3.Row
-return conn
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
 
 # =========================================================
-
 # CREATE / UPDATE DATABASE
-
 # =========================================================
 
 def create_table():
 
-```
-conn = get_db()
+    conn = get_db()
 
-conn.execute("""
-    CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        product_id TEXT,
-        name TEXT NOT NULL,
-        category TEXT,
-        quantity INTEGER,
-        price REAL,
-        supplier TEXT,
-        supplier_location TEXT,
-        delivery_location TEXT,
-        delivery_date TEXT,
-        delivery_time TEXT
-    )
-""")
-
-existing_columns = [
-    row["name"]
-    for row in conn.execute(
-        "PRAGMA table_info(products)"
-    ).fetchall()
-]
-
-required_columns = [
-    ("product_id", "TEXT"),
-    ("supplier_location", "TEXT"),
-    ("delivery_location", "TEXT"),
-    ("delivery_date", "TEXT"),
-    ("delivery_time", "TEXT")
-]
-
-for column_name, column_type in required_columns:
-
-    if column_name not in existing_columns:
-
-        conn.execute(
-            f"ALTER TABLE products ADD COLUMN "
-            f"{column_name} {column_type}"
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id TEXT,
+            name TEXT NOT NULL,
+            category TEXT,
+            quantity INTEGER,
+            price REAL,
+            supplier TEXT,
+            supplier_location TEXT,
+            delivery_location TEXT,
+            delivery_date TEXT,
+            delivery_time TEXT
         )
+    """)
 
-conn.commit()
-conn.close()
-```
+    existing_columns = [
+        row["name"]
+        for row in conn.execute(
+            "PRAGMA table_info(products)"
+        ).fetchall()
+    ]
+
+    required_columns = [
+        ("product_id", "TEXT"),
+        ("supplier_location", "TEXT"),
+        ("delivery_location", "TEXT"),
+        ("delivery_date", "TEXT"),
+        ("delivery_time", "TEXT")
+    ]
+
+    for column_name, column_type in required_columns:
+
+        if column_name not in existing_columns:
+
+            conn.execute(
+                f"ALTER TABLE products ADD COLUMN "
+                f"{column_name} {column_type}"
+            )
+
+    conn.commit()
+    conn.close()
+
 
 # =========================================================
-
 # LOGIN REQUIRED
-
 # =========================================================
 
 def login_required():
 
-```
-if "logged_in" not in session:
-    return False
+    if "logged_in" not in session:
+        return False
 
-return True
-```
+    return True
+
 
 # =========================================================
-
 # LOGIN
-
 # =========================================================
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
-```
-if request.method == "POST":
+    if request.method == "POST":
 
-    username = request.form.get(
-        "username",
-        ""
-    ).strip()
+        username = request.form.get(
+            "username",
+            ""
+        ).strip()
 
-    password = request.form.get(
-        "password",
-        ""
-    ).strip()
+        password = request.form.get(
+            "password",
+            ""
+        ).strip()
 
-    # Default login
-    if username == "admin" and password == "admin123":
+        if username == "admin" and password == "admin123":
 
-        session["logged_in"] = True
-        session["username"] = username
+            session["logged_in"] = True
+            session["username"] = username
 
-        return redirect("/")
+            return redirect("/")
 
-    return render_template(
-        "login.html",
-        error="Invalid username or password"
-    )
+        return render_template(
+            "login.html",
+            error="Invalid username or password"
+        )
 
-return render_template("login.html")
-```
+    return render_template("login.html")
+
 
 # =========================================================
-
 # LOGOUT
-
 # =========================================================
 
 @app.route("/logout")
 def logout():
 
-```
-session.clear()
+    session.clear()
 
-return redirect("/login")
-```
+    return redirect("/login")
+
 
 # =========================================================
-
 # CLEAN LOCATION
-
 # =========================================================
 
 def clean_location(location):
 
-```
-if not location:
-    return ""
+    if not location:
+        return ""
 
-location = location.strip()
+    location = location.strip()
 
-location_lower = location.lower()
+    location_lower = location.lower()
 
-location_map = {
+    location_map = {
 
-    "mumbai":
-        "Mumbai, Maharashtra, India",
+        "mumbai":
+            "Mumbai, Maharashtra, India",
 
-    "bombay":
-        "Mumbai, Maharashtra, India",
+        "bombay":
+            "Mumbai, Maharashtra, India",
 
-    "kurla":
-        "Kurla, Mumbai, Maharashtra, India",
+        "kurla":
+            "Kurla, Mumbai, Maharashtra, India",
 
-    "thane":
-        "Thane, Maharashtra, India",
+        "thane":
+            "Thane, Maharashtra, India",
 
-    "navi mumbai":
-        "Navi Mumbai, Maharashtra, India",
+        "navi mumbai":
+            "Navi Mumbai, Maharashtra, India",
 
-    "pune":
-        "Pune, Maharashtra, India",
+        "pune":
+            "Pune, Maharashtra, India",
 
-    "nashik":
-        "Nashik, Maharashtra, India",
+        "nashik":
+            "Nashik, Maharashtra, India",
 
-    "nagpur":
-        "Nagpur, Maharashtra, India",
+        "nagpur":
+            "Nagpur, Maharashtra, India",
 
-    "aurangabad":
-        "Chhatrapati Sambhajinagar, Maharashtra, India",
+        "aurangabad":
+            "Chhatrapati Sambhajinagar, Maharashtra, India",
 
-    "chhatrapati sambhajinagar":
-        "Chhatrapati Sambhajinagar, Maharashtra, India",
+        "chhatrapati sambhajinagar":
+            "Chhatrapati Sambhajinagar, Maharashtra, India",
 
-    "kolhapur":
-        "Kolhapur, Maharashtra, India",
+        "kolhapur":
+            "Kolhapur, Maharashtra, India",
 
-    "solapur":
-        "Solapur, Maharashtra, India",
+        "solapur":
+            "Solapur, Maharashtra, India",
 
-    "surat":
-        "Surat, Gujarat, India",
+        "surat":
+            "Surat, Gujarat, India",
 
-    "ahmedabad":
-        "Ahmedabad, Gujarat, India",
+        "ahmedabad":
+            "Ahmedabad, Gujarat, India",
 
-    "vadodara":
-        "Vadodara, Gujarat, India",
+        "vadodara":
+            "Vadodara, Gujarat, India",
 
-    "rajkot":
-        "Rajkot, Gujarat, India",
+        "rajkot":
+            "Rajkot, Gujarat, India",
 
-    "delhi":
-        "Delhi, India",
+        "delhi":
+            "Delhi, India",
 
-    "new delhi":
-        "New Delhi, Delhi, India",
+        "new delhi":
+            "New Delhi, Delhi, India",
 
-    "jaipur":
-        "Jaipur, Rajasthan, India",
+        "jaipur":
+            "Jaipur, Rajasthan, India",
 
-    "indore":
-        "Indore, Madhya Pradesh, India",
+        "indore":
+            "Indore, Madhya Pradesh, India",
 
-    "bhopal":
-        "Bhopal, Madhya Pradesh, India",
+        "bhopal":
+            "Bhopal, Madhya Pradesh, India",
 
-    "hyderabad":
-        "Hyderabad, Telangana, India",
+        "hyderabad":
+            "Hyderabad, Telangana, India",
 
-    "bangalore":
-        "Bengaluru, Karnataka, India",
+        "bangalore":
+            "Bengaluru, Karnataka, India",
 
-    "bengaluru":
-        "Bengaluru, Karnataka, India",
+        "bengaluru":
+            "Bengaluru, Karnataka, India",
 
-    "chennai":
-        "Chennai, Tamil Nadu, India",
+        "chennai":
+            "Chennai, Tamil Nadu, India",
 
-    "kolkata":
-        "Kolkata, West Bengal, India",
+        "kolkata":
+            "Kolkata, West Bengal, India",
 
-    "lucknow":
-        "Lucknow, Uttar Pradesh, India",
+        "lucknow":
+            "Lucknow, Uttar Pradesh, India",
 
-    "patna":
-        "Patna, Bihar, India",
+        "patna":
+            "Patna, Bihar, India",
 
-    "goa":
-        "Goa, India"
-}
+        "goa":
+            "Goa, India"
+    }
 
-if location_lower in location_map:
-    return location_map[location_lower]
+    if location_lower in location_map:
+        return location_map[location_lower]
 
-if "india" in location_lower:
-    return location
+    if "india" in location_lower:
+        return location
 
-return location + ", India"
-```
+    return location + ", India"
+
 
 # =========================================================
-
 # GET COORDINATES
-
 # =========================================================
 
 def get_coordinates(location):
 
-```
-try:
+    try:
 
-    cleaned_location = clean_location(location)
+        cleaned_location = clean_location(location)
 
-    url = "https://nominatim.openstreetmap.org/search"
+        url = "https://nominatim.openstreetmap.org/search"
 
-    params = {
-        "q": cleaned_location,
-        "format": "json",
-        "limit": 5,
-        "countrycodes": "in",
-        "addressdetails": 1
-    }
+        params = {
+            "q": cleaned_location,
+            "format": "json",
+            "limit": 5,
+            "countrycodes": "in",
+            "addressdetails": 1
+        }
 
-    headers = {
-        "User-Agent":
-            "InventoryManagementSystem/1.0"
-    }
+        headers = {
+            "User-Agent":
+                "InventoryManagementSystem/1.0"
+        }
 
-    response = requests.get(
-        url,
-        params=params,
-        headers=headers,
-        timeout=10
-    )
-
-    if response.status_code != 200:
-        return None
-
-    results = response.json()
-
-    for result in results:
-
-        address = result.get(
-            "address",
-            {}
+        response = requests.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=10
         )
 
-        country = address.get(
-            "country",
-            ""
-        ).lower()
+        if response.status_code != 200:
+            return None
 
-        if country == "india":
+        results = response.json()
 
-            return (
-                float(result["lat"]),
-                float(result["lon"])
+        for result in results:
+
+            address = result.get(
+                "address",
+                {}
             )
 
-    if results:
+            country = address.get(
+                "country",
+                ""
+            ).lower()
 
-        return (
-            float(results[0]["lat"]),
-            float(results[0]["lon"])
+            if country == "india":
+
+                return (
+                    float(result["lat"]),
+                    float(result["lon"])
+                )
+
+        if results:
+
+            return (
+                float(results[0]["lat"]),
+                float(results[0]["lon"])
+            )
+
+    except Exception as error:
+
+        print(
+            "Geocoding error:",
+            error
         )
 
-except Exception as error:
+    return None
 
-    print(
-        "Geocoding error:",
-        error
-    )
-
-return None
-```
 
 # =========================================================
-
 # HAVERSINE DISTANCE
-
 # =========================================================
 
 def haversine_distance(
-lat1,
-lon1,
-lat2,
-lon2
+    lat1,
+    lon1,
+    lat2,
+    lon2
 ):
 
-```
-earth_radius = 6371
+    earth_radius = 6371
 
-lat1 = math.radians(lat1)
-lat2 = math.radians(lat2)
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
 
-dlat = lat2 - lat1
+    dlat = lat2 - lat1
 
-dlon = math.radians(lon2 - lon1)
+    dlon = math.radians(lon2 - lon1)
 
-a = (
-    math.sin(dlat / 2) ** 2
-    +
-    math.cos(lat1)
-    * math.cos(lat2)
-    * math.sin(dlon / 2) ** 2
-)
+    a = (
+        math.sin(dlat / 2) ** 2
+        +
+        math.cos(lat1)
+        * math.cos(lat2)
+        * math.sin(dlon / 2) ** 2
+    )
 
-c = 2 * math.atan2(
-    math.sqrt(a),
-    math.sqrt(1 - a)
-)
+    c = 2 * math.atan2(
+        math.sqrt(a),
+        math.sqrt(1 - a)
+    )
 
-return earth_radius * c
-```
+    return earth_radius * c
+
 
 # =========================================================
-
 # CALCULATE DELIVERY ETA
-
 # =========================================================
 
 def calculate_delivery_eta(
-supplier_location,
-delivery_location
+    supplier_location,
+    delivery_location
 ):
 
-```
-fallback_arrival = (
-    datetime.now()
-    + timedelta(days=3)
-)
-
-origin = get_coordinates(
-    supplier_location
-)
-
-destination = get_coordinates(
-    delivery_location
-)
-
-if not origin or not destination:
-
-    return (
-        fallback_arrival.strftime(
-            "%Y-%m-%d"
-        ),
-        fallback_arrival.strftime(
-            "%I:%M %p"
-        )
-    )
-
-origin_lat, origin_lon = origin
-
-destination_lat, destination_lon = destination
-
-# -----------------------------------------------------
-# OSRM ROAD ROUTE
-# -----------------------------------------------------
-
-try:
-
-    route_url = (
-        "https://router.project-osrm.org/"
-        "route/v1/driving/"
-        f"{origin_lon},{origin_lat};"
-        f"{destination_lon},{destination_lat}"
-    )
-
-    params = {
-        "overview": "false"
-    }
-
-    response = requests.get(
-        route_url,
-        params=params,
-        timeout=10
-    )
-
-    if response.status_code == 200:
-
-        data = response.json()
-
-        routes = data.get(
-            "routes",
-            []
-        )
-
-        if routes:
-
-            duration_seconds = (
-                routes[0]["duration"]
-            )
-
-            arrival = (
-                datetime.now()
-                + timedelta(
-                    seconds=duration_seconds
-                )
-            )
-
-            return (
-                arrival.strftime(
-                    "%Y-%m-%d"
-                ),
-                arrival.strftime(
-                    "%I:%M %p"
-                )
-            )
-
-except Exception as error:
-
-    print(
-        "OSRM error:",
-        error
-    )
-
-# -----------------------------------------------------
-# FALLBACK DISTANCE
-# -----------------------------------------------------
-
-try:
-
-    distance_km = haversine_distance(
-        origin_lat,
-        origin_lon,
-        destination_lat,
-        destination_lon
-    )
-
-    average_speed = 40
-
-    travel_hours = (
-        distance_km / average_speed
-    )
-
-    arrival = (
+    fallback_arrival = (
         datetime.now()
-        + timedelta(
-            hours=travel_hours
+        + timedelta(days=3)
+    )
+
+    origin = get_coordinates(
+        supplier_location
+    )
+
+    destination = get_coordinates(
+        delivery_location
+    )
+
+    if not origin or not destination:
+
+        return (
+            fallback_arrival.strftime(
+                "%Y-%m-%d"
+            ),
+            fallback_arrival.strftime(
+                "%I:%M %p"
+            )
         )
-    )
 
-    return (
-        arrival.strftime(
-            "%Y-%m-%d"
-        ),
-        arrival.strftime(
-            "%I:%M %p"
+    origin_lat, origin_lon = origin
+
+    destination_lat, destination_lon = destination
+
+    # -----------------------------------------------------
+    # OSRM ROAD ROUTE
+    # -----------------------------------------------------
+
+    try:
+
+        route_url = (
+            "https://router.project-osrm.org/"
+            "route/v1/driving/"
+            f"{origin_lon},{origin_lat};"
+            f"{destination_lon},{destination_lat}"
         )
-    )
 
-except Exception as error:
+        params = {
+            "overview": "false"
+        }
 
-    print(
-        "Fallback ETA error:",
-        error
-    )
-
-    return (
-        fallback_arrival.strftime(
-            "%Y-%m-%d"
-        ),
-        fallback_arrival.strftime(
-            "%I:%M %p"
+        response = requests.get(
+            route_url,
+            params=params,
+            timeout=10
         )
-    )
-```
+
+        if response.status_code == 200:
+
+            data = response.json()
+
+            routes = data.get(
+                "routes",
+                []
+            )
+
+            if routes:
+
+                duration_seconds = (
+                    routes[0]["duration"]
+                )
+
+                arrival = (
+                    datetime.now()
+                    + timedelta(
+                        seconds=duration_seconds
+                    )
+                )
+
+                return (
+                    arrival.strftime(
+                        "%Y-%m-%d"
+                    ),
+                    arrival.strftime(
+                        "%I:%M %p"
+                    )
+                )
+
+    except Exception as error:
+
+        print(
+            "OSRM error:",
+            error
+        )
+
+    # -----------------------------------------------------
+    # FALLBACK DISTANCE
+    # -----------------------------------------------------
+
+    try:
+
+        distance_km = haversine_distance(
+            origin_lat,
+            origin_lon,
+            destination_lat,
+            destination_lon
+        )
+
+        average_speed = 40
+
+        travel_hours = (
+            distance_km / average_speed
+        )
+
+        arrival = (
+            datetime.now()
+            + timedelta(
+                hours=travel_hours
+            )
+        )
+
+        return (
+            arrival.strftime(
+                "%Y-%m-%d"
+            ),
+            arrival.strftime(
+                "%I:%M %p"
+            )
+        )
+
+    except Exception as error:
+
+        print(
+            "Fallback ETA error:",
+            error
+        )
+
+        return (
+            fallback_arrival.strftime(
+                "%Y-%m-%d"
+            ),
+            fallback_arrival.strftime(
+                "%I:%M %p"
+            )
+        )
+
 
 # =========================================================
-
 # HOME
-
 # =========================================================
 
 @app.route("/")
 def index():
 
-```
-if not login_required():
-    return redirect("/login")
-
-conn = get_db()
-
-products = conn.execute(
-    """
-    SELECT *
-    FROM products
-    ORDER BY id DESC
-    """
-).fetchall()
-
-conn.close()
-
-return render_template(
-    "index.html",
-    products=products
-)
-```
-
-# =========================================================
-
-# ADD PRODUCT
-
-# =========================================================
-
-@app.route(
-"/add",
-methods=["POST"]
-)
-def add_product():
-
-```
-if not login_required():
-    return redirect("/login")
-
-product_id = request.form.get(
-    "product_id",
-    ""
-).strip()
-
-name = request.form.get(
-    "name",
-    ""
-).strip()
-
-category = request.form.get(
-    "category",
-    ""
-).strip()
-
-quantity = request.form.get(
-    "quantity",
-    0
-)
-
-price = request.form.get(
-    "price",
-    0
-)
-
-supplier = request.form.get(
-    "supplier",
-    ""
-).strip()
-
-supplier_location = request.form.get(
-    "supplier_location",
-    ""
-).strip()
-
-delivery_location = request.form.get(
-    "delivery_location",
-    ""
-).strip()
-
-delivery_date = None
-delivery_time = None
-
-if (
-    supplier_location
-    and delivery_location
-):
-
-    delivery_date, delivery_time = (
-        calculate_delivery_eta(
-            supplier_location,
-            delivery_location
-        )
-    )
-
-conn = get_db()
-
-conn.execute(
-    """
-    INSERT INTO products
-    (
-        product_id,
-        name,
-        category,
-        quantity,
-        price,
-        supplier,
-        supplier_location,
-        delivery_location,
-        delivery_date,
-        delivery_time
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """,
-    (
-        product_id,
-        name,
-        category,
-        quantity,
-        price,
-        supplier,
-        supplier_location,
-        delivery_location,
-        delivery_date,
-        delivery_time
-    )
-)
-
-conn.commit()
-conn.close()
-
-return redirect("/")
-```
-
-# =========================================================
-
-# DELETE
-
-# =========================================================
-
-@app.route(
-"/delete/[int:id](int:id)"
-)
-def delete_product(id):
-
-```
-if not login_required():
-    return redirect("/login")
-
-conn = get_db()
-
-conn.execute(
-    """
-    DELETE FROM products
-    WHERE id = ?
-    """,
-    (id,)
-)
-
-conn.commit()
-conn.close()
-
-return redirect("/")
-```
-
-# =========================================================
-
-# EDIT
-
-# =========================================================
-
-@app.route(
-"/edit/[int:id](int:id)"
-)
-def edit_product(id):
-
-```
-if not login_required():
-    return redirect("/login")
-
-conn = get_db()
-
-product = conn.execute(
-    """
-    SELECT *
-    FROM products
-    WHERE id = ?
-    """,
-    (id,)
-).fetchone()
-
-conn.close()
-
-if product is None:
-    return "Product not found", 404
-
-return render_template(
-    "edit_product.html",
-    product=product
-)
-```
-
-# =========================================================
-
-# UPDATE
-
-# =========================================================
-
-@app.route(
-"/update/[int:id](int:id)",
-methods=["POST"]
-)
-def update_product(id):
-
-```
-if not login_required():
-    return redirect("/login")
-
-product_id = request.form.get(
-    "product_id",
-    ""
-).strip()
-
-name = request.form.get(
-    "name",
-    ""
-).strip()
-
-category = request.form.get(
-    "category",
-    ""
-).strip()
-
-quantity = request.form.get(
-    "quantity",
-    0
-)
-
-price = request.form.get(
-    "price",
-    0
-)
-
-supplier = request.form.get(
-    "supplier",
-    ""
-).strip()
-
-supplier_location = request.form.get(
-    "supplier_location",
-    ""
-).strip()
-
-delivery_location = request.form.get(
-    "delivery_location",
-    ""
-).strip()
-
-delivery_date = None
-delivery_time = None
-
-if (
-    supplier_location
-    and delivery_location
-):
-
-    delivery_date, delivery_time = (
-        calculate_delivery_eta(
-            supplier_location,
-            delivery_location
-        )
-    )
-
-conn = get_db()
-
-conn.execute(
-    """
-    UPDATE products
-
-    SET
-        product_id = ?,
-        name = ?,
-        category = ?,
-        quantity = ?,
-        price = ?,
-        supplier = ?,
-        supplier_location = ?,
-        delivery_location = ?,
-        delivery_date = ?,
-        delivery_time = ?
-
-    WHERE id = ?
-    """,
-    (
-        product_id,
-        name,
-        category,
-        quantity,
-        price,
-        supplier,
-        supplier_location,
-        delivery_location,
-        delivery_date,
-        delivery_time,
-        id
-    )
-)
-
-conn.commit()
-conn.close()
-
-return redirect("/")
-```
-
-# =========================================================
-
-# STOCK OUT
-
-# =========================================================
-
-@app.route(
-"/stock-out/[int:id](int:id)",
-methods=["GET", "POST"]
-)
-def stock_out(id):
-
-```
-if not login_required():
-    return redirect("/login")
-
-conn = get_db()
-
-product = conn.execute(
-    """
-    SELECT *
-    FROM products
-    WHERE id = ?
-    """,
-    (id,)
-).fetchone()
-
-if product is None:
+    if not login_required():
+        return redirect("/login")
+
+    conn = get_db()
+
+    products = conn.execute(
+        """
+        SELECT *
+        FROM products
+        ORDER BY id DESC
+        """
+    ).fetchall()
 
     conn.close()
 
-    return "Product not found", 404
+    return render_template(
+        "index.html",
+        products=products
+    )
 
-if request.method == "POST":
 
-    quantity = int(
-        request.form.get(
-            "quantity",
-            0
+# =========================================================
+# ADD PRODUCT
+# =========================================================
+
+@app.route("/add", methods=["POST"])
+def add_product():
+
+    if not login_required():
+        return redirect("/login")
+
+    product_id = request.form.get(
+        "product_id",
+        ""
+    ).strip()
+
+    name = request.form.get(
+        "name",
+        ""
+    ).strip()
+
+    category = request.form.get(
+        "category",
+        ""
+    ).strip()
+
+    quantity = request.form.get(
+        "quantity",
+        0
+    )
+
+    price = request.form.get(
+        "price",
+        0
+    )
+
+    supplier = request.form.get(
+        "supplier",
+        ""
+    ).strip()
+
+    supplier_location = request.form.get(
+        "supplier_location",
+        ""
+    ).strip()
+
+    delivery_location = request.form.get(
+        "delivery_location",
+        ""
+    ).strip()
+
+    delivery_date = None
+    delivery_time = None
+
+    if (
+        supplier_location
+        and delivery_location
+    ):
+
+        delivery_date, delivery_time = (
+            calculate_delivery_eta(
+                supplier_location,
+                delivery_location
+            )
+        )
+
+    conn = get_db()
+
+    conn.execute(
+        """
+        INSERT INTO products
+        (
+            product_id,
+            name,
+            category,
+            quantity,
+            price,
+            supplier,
+            supplier_location,
+            delivery_location,
+            delivery_date,
+            delivery_time
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            product_id,
+            name,
+            category,
+            quantity,
+            price,
+            supplier,
+            supplier_location,
+            delivery_location,
+            delivery_date,
+            delivery_time
         )
     )
 
-    current_quantity = (
-        product["quantity"] or 0
+    conn.commit()
+    conn.close()
+
+    return redirect("/")
+
+
+# =========================================================
+# DELETE
+# =========================================================
+
+@app.route("/delete/<int:id>")
+def delete_product(id):
+
+    if not login_required():
+        return redirect("/login")
+
+    conn = get_db()
+
+    conn.execute(
+        """
+        DELETE FROM products
+        WHERE id = ?
+        """,
+        (id,)
     )
 
-    new_quantity = (
-        current_quantity - quantity
+    conn.commit()
+    conn.close()
+
+    return redirect("/")
+
+
+# =========================================================
+# EDIT
+# =========================================================
+
+@app.route("/edit/<int:id>")
+def edit_product(id):
+
+    if not login_required():
+        return redirect("/login")
+
+    conn = get_db()
+
+    product = conn.execute(
+        """
+        SELECT *
+        FROM products
+        WHERE id = ?
+        """,
+        (id,)
+    ).fetchone()
+
+    conn.close()
+
+    if product is None:
+        return "Product not found", 404
+
+    return render_template(
+        "edit_product.html",
+        product=product
     )
 
-    if new_quantity < 0:
-        new_quantity = 0
+
+# =========================================================
+# UPDATE
+# =========================================================
+
+@app.route("/update/<int:id>", methods=["POST"])
+def update_product(id):
+
+    if not login_required():
+        return redirect("/login")
+
+    product_id = request.form.get(
+        "product_id",
+        ""
+    ).strip()
+
+    name = request.form.get(
+        "name",
+        ""
+    ).strip()
+
+    category = request.form.get(
+        "category",
+        ""
+    ).strip()
+
+    quantity = request.form.get(
+        "quantity",
+        0
+    )
+
+    price = request.form.get(
+        "price",
+        0
+    )
+
+    supplier = request.form.get(
+        "supplier",
+        ""
+    ).strip()
+
+    supplier_location = request.form.get(
+        "supplier_location",
+        ""
+    ).strip()
+
+    delivery_location = request.form.get(
+        "delivery_location",
+        ""
+    ).strip()
+
+    delivery_date = None
+    delivery_time = None
+
+    if (
+        supplier_location
+        and delivery_location
+    ):
+
+        delivery_date, delivery_time = (
+            calculate_delivery_eta(
+                supplier_location,
+                delivery_location
+            )
+        )
+
+    conn = get_db()
 
     conn.execute(
         """
         UPDATE products
-        SET quantity = ?
+
+        SET
+            product_id = ?,
+            name = ?,
+            category = ?,
+            quantity = ?,
+            price = ?,
+            supplier = ?,
+            supplier_location = ?,
+            delivery_location = ?,
+            delivery_date = ?,
+            delivery_time = ?
+
         WHERE id = ?
         """,
         (
-            new_quantity,
+            product_id,
+            name,
+            category,
+            quantity,
+            price,
+            supplier,
+            supplier_location,
+            delivery_location,
+            delivery_date,
+            delivery_time,
             id
         )
     )
@@ -920,183 +797,228 @@ if request.method == "POST":
 
     return redirect("/")
 
-conn.close()
-
-return render_template(
-    "stock_out.html",
-    product=product
-)
-```
 
 # =========================================================
+# STOCK OUT
+# =========================================================
 
+@app.route("/stock-out/<int:id>", methods=["GET", "POST"])
+def stock_out(id):
+
+    if not login_required():
+        return redirect("/login")
+
+    conn = get_db()
+
+    product = conn.execute(
+        """
+        SELECT *
+        FROM products
+        WHERE id = ?
+        """,
+        (id,)
+    ).fetchone()
+
+    if product is None:
+
+        conn.close()
+
+        return "Product not found", 404
+
+    if request.method == "POST":
+
+        quantity = int(
+            request.form.get(
+                "quantity",
+                0
+            )
+        )
+
+        current_quantity = (
+            product["quantity"] or 0
+        )
+
+        new_quantity = (
+            current_quantity - quantity
+        )
+
+        if new_quantity < 0:
+            new_quantity = 0
+
+        conn.execute(
+            """
+            UPDATE products
+            SET quantity = ?
+            WHERE id = ?
+            """,
+            (
+                new_quantity,
+                id
+            )
+        )
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/")
+
+    conn.close()
+
+    return render_template(
+        "stock_out.html",
+        product=product
+    )
+
+
+# =========================================================
 # SEARCH
-
 # =========================================================
 
 @app.route("/search")
 def search():
 
-```
-if not login_required():
-    return redirect("/login")
+    if not login_required():
+        return redirect("/login")
 
-keyword = request.args.get(
-    "keyword",
-    ""
-).strip()
+    keyword = request.args.get(
+        "keyword",
+        ""
+    ).strip()
 
-conn = get_db()
+    conn = get_db()
 
-products = conn.execute(
-    """
-    SELECT *
-    FROM products
+    products = conn.execute(
+        """
+        SELECT *
+        FROM products
 
-    WHERE
-        product_id LIKE ?
-        OR name LIKE ?
-        OR category LIKE ?
-        OR supplier LIKE ?
+        WHERE
+            product_id LIKE ?
+            OR name LIKE ?
+            OR category LIKE ?
+            OR supplier LIKE ?
 
-    ORDER BY id DESC
-    """,
-    (
-        f"%{keyword}%",
-        f"%{keyword}%",
-        f"%{keyword}%",
-        f"%{keyword}%"
+        ORDER BY id DESC
+        """,
+        (
+            f"%{keyword}%",
+            f"%{keyword}%",
+            f"%{keyword}%",
+            f"%{keyword}%"
+        )
+    ).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "index.html",
+        products=products
     )
-).fetchall()
 
-conn.close()
-
-return render_template(
-    "index.html",
-    products=products
-)
-```
 
 # =========================================================
-
 # LOW STOCK
-
 # =========================================================
 
 @app.route("/low-stock")
 def low_stock():
 
-```
-if not login_required():
-    return redirect("/login")
+    if not login_required():
+        return redirect("/login")
 
-conn = get_db()
+    conn = get_db()
 
-products = conn.execute(
-    """
-    SELECT *
-    FROM products
+    products = conn.execute(
+        """
+        SELECT *
+        FROM products
 
-    WHERE quantity <= 5
+        WHERE quantity <= 5
 
-    ORDER BY quantity ASC
-    """
-).fetchall()
+        ORDER BY quantity ASC
+        """
+    ).fetchall()
 
-conn.close()
+    conn.close()
 
-return render_template(
-    "index.html",
-    products=products
-)
-```
+    return render_template(
+        "index.html",
+        products=products
+    )
+
 
 # =========================================================
-
 # MAP
-
 # =========================================================
 
-@app.route(
-"/map/[int:id](int:id)"
-)
+@app.route("/map/<int:id>")
 def product_map(id):
 
-```
-if not login_required():
-    return redirect("/login")
+    if not login_required():
+        return redirect("/login")
 
-conn = get_db()
+    conn = get_db()
 
-product = conn.execute(
-    """
-    SELECT *
-    FROM products
-    WHERE id = ?
-    """,
-    (id,)
-).fetchone()
+    product = conn.execute(
+        """
+        SELECT *
+        FROM products
+        WHERE id = ?
+        """,
+        (id,)
+    ).fetchone()
 
-conn.close()
+    conn.close()
 
-if product is None:
-    return "Product not found", 404
+    if product is None:
+        return "Product not found", 404
 
-return render_template(
-    "map.html",
-    product=product
-)
-```
+    return render_template(
+        "map.html",
+        product=product
+    )
+
 
 # =========================================================
-
 # BILL
-
 # =========================================================
 
-@app.route(
-"/bill/[int:id](int:id)"
-)
+@app.route("/bill/<int:id>")
 def bill(id):
 
-```
-if not login_required():
-    return redirect("/login")
+    if not login_required():
+        return redirect("/login")
 
-conn = get_db()
+    conn = get_db()
 
-product = conn.execute(
-    """
-    SELECT *
-    FROM products
-    WHERE id = ?
-    """,
-    (id,)
-).fetchone()
+    product = conn.execute(
+        """
+        SELECT *
+        FROM products
+        WHERE id = ?
+        """,
+        (id,)
+    ).fetchone()
 
-conn.close()
+    conn.close()
 
-if product is None:
-    return "Product not found", 404
+    if product is None:
+        return "Product not found", 404
 
-return render_template(
-    "bill.html",
-    product=product
-)
-```
+    return render_template(
+        "bill.html",
+        product=product
+    )
+
 
 # =========================================================
-
 # START
-
 # =========================================================
 
 create_table()
 
-if **name** == "**main**":
+if __name__ == "__main__":
 
-```
-app.run(
-    debug=True
-)
-```
+    app.run(
+        debug=True
+    )
