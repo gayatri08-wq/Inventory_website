@@ -29,6 +29,7 @@ def create_table():
 
     conn = get_db()
 
+    # Products table
     conn.execute("""
         CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,6 +46,16 @@ def create_table():
         )
     """)
 
+    # Users table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        )
+    """)
+
+    # Check existing product columns
     existing_columns = [
         row["name"]
         for row in conn.execute(
@@ -86,6 +97,91 @@ def login_required():
 
 
 # =========================================================
+# REGISTRATION
+# =========================================================
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+
+        username = request.form.get(
+            "username",
+            ""
+        ).strip()
+
+        password = request.form.get(
+            "password",
+            ""
+        ).strip()
+
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        ).strip()
+
+        # Empty fields check
+        if not username or not password or not confirm_password:
+
+            return render_template(
+                "register.html",
+                error="All fields are required"
+            )
+
+        # Password match check
+        if password != confirm_password:
+
+            return render_template(
+                "register.html",
+                error="Passwords do not match"
+            )
+
+        conn = get_db()
+
+        # Check username already exists
+        existing_user = conn.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE username = ?
+            """,
+            (username,)
+        ).fetchone()
+
+        if existing_user:
+
+            conn.close()
+
+            return render_template(
+                "register.html",
+                error="Username already exists"
+            )
+
+        # Create new user
+        conn.execute(
+            """
+            INSERT INTO users
+            (
+                username,
+                password
+            )
+            VALUES (?, ?)
+            """,
+            (
+                username,
+                password
+            )
+        )
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/login")
+
+    return render_template("register.html")
+
+
+# =========================================================
 # LOGIN
 # =========================================================
 
@@ -104,10 +200,28 @@ def login():
             ""
         ).strip()
 
-        if username == "admin" and password == "admin123":
+        conn = get_db()
+
+        # Check username and password
+        user = conn.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE username = ?
+            AND password = ?
+            """,
+            (
+                username,
+                password
+            )
+        ).fetchone()
+
+        conn.close()
+
+        if user:
 
             session["logged_in"] = True
-            session["username"] = username
+            session["username"] = user["username"]
 
             return redirect("/")
 
@@ -389,9 +503,9 @@ def calculate_delivery_eta(
 
     destination_lat, destination_lon = destination
 
-    # -----------------------------------------------------
+    # =====================================================
     # OSRM ROAD ROUTE
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -450,9 +564,9 @@ def calculate_delivery_eta(
             error
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # FALLBACK DISTANCE
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
