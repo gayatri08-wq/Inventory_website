@@ -4,8 +4,10 @@ from datetime import datetime, timedelta
 import math
 import requests
 
+
 app = Flask(__name__)
 
+# Secret key for login session
 app.secret_key = "inventory_management_secret_key"
 
 DATABASE = "inventory.db"
@@ -16,8 +18,11 @@ DATABASE = "inventory.db"
 # =========================================================
 
 def get_db():
+
     conn = sqlite3.connect(DATABASE)
+
     conn.row_factory = sqlite3.Row
+
     return conn
 
 
@@ -55,7 +60,7 @@ def create_table():
         )
     """)
 
-    # Check existing product columns
+    # Existing product columns check
     existing_columns = [
         row["name"]
         for row in conn.execute(
@@ -81,6 +86,7 @@ def create_table():
             )
 
     conn.commit()
+
     conn.close()
 
 
@@ -97,7 +103,7 @@ def login_required():
 
 
 # =========================================================
-# REGISTRATION
+# REGISTER
 # =========================================================
 
 @app.route("/register", methods=["GET", "POST"])
@@ -120,7 +126,7 @@ def register():
             ""
         ).strip()
 
-        # Empty fields check
+        # Empty field check
         if not username or not password or not confirm_password:
 
             return render_template(
@@ -161,10 +167,7 @@ def register():
         conn.execute(
             """
             INSERT INTO users
-            (
-                username,
-                password
-            )
+            (username, password)
             VALUES (?, ?)
             """,
             (
@@ -174,6 +177,7 @@ def register():
         )
 
         conn.commit()
+
         conn.close()
 
         return redirect("/login")
@@ -202,7 +206,6 @@ def login():
 
         conn = get_db()
 
-        # Check username and password
         user = conn.execute(
             """
             SELECT *
@@ -221,7 +224,8 @@ def login():
         if user:
 
             session["logged_in"] = True
-            session["username"] = user["username"]
+
+            session["username"] = username
 
             return redirect("/")
 
@@ -349,9 +353,11 @@ def clean_location(location):
     }
 
     if location_lower in location_map:
+
         return location_map[location_lower]
 
     if "india" in location_lower:
+
         return location
 
     return location + ", India"
@@ -390,6 +396,7 @@ def get_coordinates(location):
         )
 
         if response.status_code != 200:
+
             return None
 
         results = response.json()
@@ -444,6 +451,7 @@ def haversine_distance(
     earth_radius = 6371
 
     lat1 = math.radians(lat1)
+
     lat2 = math.radians(lat2)
 
     dlat = lat2 - lat1
@@ -503,9 +511,9 @@ def calculate_delivery_eta(
 
     destination_lat, destination_lon = destination
 
-    # =====================================================
+    # -----------------------------------------------------
     # OSRM ROAD ROUTE
-    # =====================================================
+    # -----------------------------------------------------
 
     try:
 
@@ -564,9 +572,9 @@ def calculate_delivery_eta(
             error
         )
 
-    # =====================================================
+    # -----------------------------------------------------
     # FALLBACK DISTANCE
-    # =====================================================
+    # -----------------------------------------------------
 
     try:
 
@@ -623,7 +631,9 @@ def calculate_delivery_eta(
 @app.route("/")
 def index():
 
+    # Login नसल्यास login page
     if not login_required():
+
         return redirect("/login")
 
     conn = get_db()
@@ -648,10 +658,14 @@ def index():
 # ADD PRODUCT
 # =========================================================
 
-@app.route("/add", methods=["POST"])
+@app.route(
+    "/add",
+    methods=["POST"]
+)
 def add_product():
 
     if not login_required():
+
         return redirect("/login")
 
     product_id = request.form.get(
@@ -695,6 +709,7 @@ def add_product():
     ).strip()
 
     delivery_date = None
+
     delivery_time = None
 
     if (
@@ -726,6 +741,7 @@ def add_product():
             delivery_date,
             delivery_time
         )
+
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
@@ -743,6 +759,7 @@ def add_product():
     )
 
     conn.commit()
+
     conn.close()
 
     return redirect("/")
@@ -752,10 +769,13 @@ def add_product():
 # DELETE
 # =========================================================
 
-@app.route("/delete/<int:id>")
+@app.route(
+    "/delete/<int:id>"
+)
 def delete_product(id):
 
     if not login_required():
+
         return redirect("/login")
 
     conn = get_db()
@@ -769,6 +789,7 @@ def delete_product(id):
     )
 
     conn.commit()
+
     conn.close()
 
     return redirect("/")
@@ -778,10 +799,13 @@ def delete_product(id):
 # EDIT
 # =========================================================
 
-@app.route("/edit/<int:id>")
+@app.route(
+    "/edit/<int:id>"
+)
 def edit_product(id):
 
     if not login_required():
+
         return redirect("/login")
 
     conn = get_db()
@@ -798,6 +822,7 @@ def edit_product(id):
     conn.close()
 
     if product is None:
+
         return "Product not found", 404
 
     return render_template(
@@ -810,10 +835,14 @@ def edit_product(id):
 # UPDATE
 # =========================================================
 
-@app.route("/update/<int:id>", methods=["POST"])
+@app.route(
+    "/update/<int:id>",
+    methods=["POST"]
+)
 def update_product(id):
 
     if not login_required():
+
         return redirect("/login")
 
     product_id = request.form.get(
@@ -857,6 +886,7 @@ def update_product(id):
     ).strip()
 
     delivery_date = None
+
     delivery_time = None
 
     if (
@@ -907,6 +937,7 @@ def update_product(id):
     )
 
     conn.commit()
+
     conn.close()
 
     return redirect("/")
@@ -916,10 +947,14 @@ def update_product(id):
 # STOCK OUT
 # =========================================================
 
-@app.route("/stock-out/<int:id>", methods=["GET", "POST"])
+@app.route(
+    "/stock-out/<int:id>",
+    methods=["GET", "POST"]
+)
 def stock_out(id):
 
     if not login_required():
+
         return redirect("/login")
 
     conn = get_db()
@@ -957,12 +992,15 @@ def stock_out(id):
         )
 
         if new_quantity < 0:
+
             new_quantity = 0
 
         conn.execute(
             """
             UPDATE products
+
             SET quantity = ?
+
             WHERE id = ?
             """,
             (
@@ -972,6 +1010,7 @@ def stock_out(id):
         )
 
         conn.commit()
+
         conn.close()
 
         return redirect("/")
@@ -992,6 +1031,7 @@ def stock_out(id):
 def search():
 
     if not login_required():
+
         return redirect("/login")
 
     keyword = request.args.get(
@@ -1038,6 +1078,7 @@ def search():
 def low_stock():
 
     if not login_required():
+
         return redirect("/login")
 
     conn = get_db()
@@ -1065,10 +1106,13 @@ def low_stock():
 # MAP
 # =========================================================
 
-@app.route("/map/<int:id>")
+@app.route(
+    "/map/<int:id>"
+)
 def product_map(id):
 
     if not login_required():
+
         return redirect("/login")
 
     conn = get_db()
@@ -1085,6 +1129,7 @@ def product_map(id):
     conn.close()
 
     if product is None:
+
         return "Product not found", 404
 
     return render_template(
@@ -1097,10 +1142,13 @@ def product_map(id):
 # BILL
 # =========================================================
 
-@app.route("/bill/<int:id>")
+@app.route(
+    "/bill/<int:id>"
+)
 def bill(id):
 
     if not login_required():
+
         return redirect("/login")
 
     conn = get_db()
@@ -1117,6 +1165,7 @@ def bill(id):
     conn.close()
 
     if product is None:
+
         return "Product not found", 404
 
     return render_template(
@@ -1130,6 +1179,7 @@ def bill(id):
 # =========================================================
 
 create_table()
+
 
 if __name__ == "__main__":
 
