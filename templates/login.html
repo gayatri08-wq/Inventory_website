@@ -1,163 +1,236 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-```
-<title>Inventory Management - Login</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-<style>
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-        font-family: Arial, sans-serif;
-    }
+    <title>Login - Inventory Management</title>
 
-    body {
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: linear-gradient(135deg, #1e3c72, #2a5298);
-    }
+    <style>
 
-    .login-container {
-        width: 380px;
-        background: white;
-        padding: 40px;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-    }
+        * {
+            box-sizing: border-box;
+        }
 
-    .login-container h1 {
-        text-align: center;
-        color: #1e3c72;
-        margin-bottom: 8px;
-    }
+        body {
+            margin: 0;
+            padding: 0;
 
-    .login-container p {
-        text-align: center;
-        color: #777;
-        margin-bottom: 30px;
-    }
+            font-family: Arial, sans-serif;
 
-    .form-group {
-        margin-bottom: 20px;
-    }
+            background: #f2f4f7;
 
-    .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: bold;
-        color: #333;
-    }
+            min-height: 100vh;
 
-    .form-group input {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        font-size: 15px;
-        outline: none;
-    }
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    .form-group input:focus {
-        border-color: #2a5298;
-    }
+        .login-box {
+            width: 380px;
 
-    .login-btn {
-        width: 100%;
-        padding: 13px;
-        border: none;
-        border-radius: 8px;
-        background: #1e3c72;
-        color: white;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-    }
+            background: white;
 
-    .login-btn:hover {
-        background: #2a5298;
-    }
+            padding: 35px;
 
-    .error {
-        background: #ffe5e5;
-        color: #d00000;
-        padding: 10px;
-        border-radius: 6px;
-        text-align: center;
-        margin-bottom: 20px;
-    }
+            border-radius: 12px;
 
-    .footer {
-        text-align: center;
-        margin-top: 25px;
-        color: #888;
-        font-size: 13px;
-    }
-</style>
-```
+            box-shadow:
+                0 5px 20px rgba(0, 0, 0, 0.15);
+
+            text-align: center;
+        }
+
+        .login-box h1 {
+            margin: 0 0 10px 0;
+
+            color: #222;
+
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+
+            margin-bottom: 25px;
+
+            font-size: 15px;
+        }
+
+        .error {
+            background: #ffe5e5;
+
+            color: #d00000;
+
+            padding: 10px;
+
+            border-radius: 6px;
+
+            margin-bottom: 15px;
+
+            font-size: 14px;
+        }
+
+        .input-group {
+            text-align: left;
+
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+
+            margin-bottom: 6px;
+
+            font-size: 14px;
+
+            font-weight: bold;
+
+            color: #333;
+        }
+
+        .input-group input {
+            width: 100%;
+
+            padding: 12px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 6px;
+
+            font-size: 15px;
+
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: #007bff;
+        }
+
+        .login-button {
+            width: 100%;
+
+            padding: 12px;
+
+            margin-top: 8px;
+
+            background: #007bff;
+
+            color: white;
+
+            border: none;
+
+            border-radius: 6px;
+
+            font-size: 16px;
+
+            cursor: pointer;
+        }
+
+        .login-button:hover {
+            background: #0056b3;
+        }
+
+        .register-link {
+            margin-top: 20px;
+
+            font-size: 14px;
+
+            color: #666;
+        }
+
+        .register-link a {
+            color: #007bff;
+
+            text-decoration: none;
+
+            font-weight: bold;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
 
 </head>
 
 <body>
 
-```
-<div class="login-container">
+    <div class="login-box">
 
-    <h1>Inventory Management</h1>
+        <h1>Inventory Management</h1>
 
-    <p>Login to continue</p>
-
-    {% if error %}
-        <div class="error">
-            {{ error }}
+        <div class="subtitle">
+            Login to continue
         </div>
-    {% endif %}
 
-    <form method="POST" action="/login">
+        {% if error %}
 
-        <div class="form-group">
-            <label for="username">Username</label>
+            <div class="error">
+                {{ error }}
+            </div>
 
-            <input
-                type="text"
-                id="username"
-                name="username"
-                placeholder="Enter username"
-                required
+        {% endif %}
+
+        <form method="POST" action="/login">
+
+            <div class="input-group">
+
+                <label for="username">
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Enter username"
+                    required
+                >
+
+            </div>
+
+            <div class="input-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter password"
+                    required
+                >
+
+            </div>
+
+            <button
+                type="submit"
+                class="login-button"
             >
+                Login
+            </button>
+
+        </form>
+
+        <div class="register-link">
+
+            Don't have an account?
+
+            <a href="/register">
+                Register
+            </a>
+
         </div>
 
-        <div class="form-group">
-            <label for="password">Password</label>
-
-            <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Enter password"
-                required
-            >
-        </div>
-
-        <button type="submit" class="login-btn">
-            Login
-        </button>
-
-    </form>
-
-    <div class="footer">
-        Inventory Management System
     </div>
-
-</div>
-```
 
 </body>
 </html>
-
